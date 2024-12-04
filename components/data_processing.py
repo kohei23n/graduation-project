@@ -86,18 +86,18 @@ def get_result_points(result, team_type):
 ## 直近k試合のStreakとWeighted Streakを計算する関数
 def calculate_streaks(team_name, current_date, df, k):
     season = df.loc[df["Date"] == current_date, "Season"].values[0]
-    pAwayStreak_matches = df[
+    past_matches = df[
         ((df["HomeTeam"] == team_name) | (df["AwayTeam"] == team_name))
         & (df["Date"] < current_date)
         & (df["Season"] == season)
     ]
-    pAwayStreak_matches = pAwayStreak_matches.sort_values(by="Date", ascending=False).head(k)
+    past_matches = past_matches.sort_values(by="Date", ascending=False).head(k)
 
-    if len(pAwayStreak_matches) < k:
+    if len(past_matches) < k:
         return None, None
 
     results = []
-    for _, game in pAwayStreak_matches.iterrows():
+    for _, game in past_matches.iterrows():
         if game["HomeTeam"] == team_name:
             points = get_result_points(game["FTR"], "home")
         else:
