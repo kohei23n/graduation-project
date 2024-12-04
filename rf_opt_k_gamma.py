@@ -7,6 +7,7 @@ from components.data_processing import (
     add_goal_difference,
     add_Diffs,
 )
+from components.model_evaluation import evaluate_rps
 from sklearn.ensemble import RandomForestClassifier
 
 # データの読み込みと準備
@@ -60,22 +61,22 @@ features = [
 ]
 
 # k と gamma の最適化の範囲
-k_values = range(3, 10)
+k_values = range(3, 8)
 gamma_values = [0.1 * i for i in range(1, 10)]
 
 # 最適な k と gamma を格納する変数
 best_k = None
 best_gamma = None
-best_score = 0
+best_rps = 1
 
-# デフォルト値のランダムフォレストモデル
-rf_model = RandomForestClassifier(random_state=42)  # デフォルト値を使用
+# デフォルト値のランダムフォレストモデルを構築
+rf_model = RandomForestClassifier(random_state=42, verbose=2)
 
-# kとgammaのすべての組み合わせをループ
+# k と gamma の すべての組み合わせをループ
 for k in k_values:
     for gamma in gamma_values:
         # 特徴量生成
-        temp_train_data = train_data.copy()  # データの再利用のためコピー
+        temp_train_data = train_data.copy()
         temp_train_data = calculate_form(temp_train_data, gamma, teams)
         temp_train_data = add_streaks(temp_train_data, k)
         temp_train_data = add_team_performance_to_matches(temp_train_data, k)
@@ -88,14 +89,14 @@ for k in k_values:
         y_train = temp_train_data["FTR"]
         rf_model.fit(X_train, y_train)
 
-        # スコア計算
-        score = rf_model.score(X_train, y_train)
+        # RPS の計算
+        rps_score = evaluate_rps(rf_model, X_train, y_train)
 
-        # 最良の k と gamma を更新
-        if score > best_score:
+        # 最良の k と gamma を更新（RPSは小さいほど良い）
+        if rps_score < best_rps:
             best_k = k
             best_gamma = gamma
-            best_score = score
+            best_rps = rps_score
 
 # 最適な k と gamma の結果を出力
-print(f"Best k: {best_k}, Best gamma: {best_gamma}, Best score: {best_score}")
+print(f"Best k: {best_k}, Best gamma: {best_gamma}, Best RPS: {best_rps}")
