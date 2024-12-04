@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from components.data_processing import (
     calculate_form,
     add_streaks,
@@ -9,7 +8,6 @@ from components.data_processing import (
     add_differentials,
 )
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import RandomizedSearchCV
 
 # データの読み込みと準備
 match_data_df = pd.read_csv("./csv/match_data_10yr.csv")
@@ -61,72 +59,43 @@ features = [
     "StWeightedDifferential",
 ]
 
-# k と gamma のデフォルト設定で特徴量生成
-default_k = 6
-default_gamma = 0.33
-teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
-train_data = calculate_form(train_data, default_gamma, teams)
-train_data = add_streaks(train_data, default_k)
-train_data = add_team_performance_to_matches(train_data, default_k)
-train_data = merge_ratings(train_data, ratings_df)
-train_data = add_goal_difference(train_data)
-train_data = add_differentials(train_data)
-
-# RandomizedSearchCVのハイパーパラメータ範囲
-n_estimators = [int(x) for x in np.linspace(200, 2000, 10)]
-max_depth = [int(x) for x in np.linspace(10, 110, 11)]
-min_samples_split = [2, 5, 10]
-min_samples_leaf = [1, 2, 4]
-max_features = ["log2", "sqrt"]
-random_grid = {
-    "n_estimators": n_estimators,
-    "max_depth": max_depth,
-    "min_samples_split": min_samples_split,
-    "min_samples_leaf": min_samples_leaf,
-    "max_features": max_features,
-}
-
-rf_model = RandomForestClassifier(random_state=42)
-rf_random = RandomizedSearchCV(
-    estimator=rf_model,
-    param_distributions=random_grid,
-    n_iter=50,
-    cv=3,
-    n_jobs=-1,
-    random_state=42,
-    verbose=1
-)
-rf_random.fit(train_data[features], train_data["FTR"])
-best_random_params = rf_random.best_params_
-
-# 最適なパラメータを保存するための変数
+# k と gamma の最適化の範囲
 k_values = range(3, 10)
 gamma_values = [0.1 * i for i in range(1, 10)]
 
+# 最適な k と gamma を格納する変数
 best_k = None
 best_gamma = None
 best_score = 0
 
+# デフォルト値のランダムフォレストモデル
+rf_model = RandomForestClassifier(random_state=42)  # デフォルト値を使用
+
 # kとgammaのすべての組み合わせをループ
 for k in k_values:
     for gamma in gamma_values:
-        calculate_form(train_data, gamma, teams)
-        add_streaks(train_data, k)
-        add_team_performance_to_matches(train_data, k)
-        merge_ratings(train_data, ratings_df)
-        add_goal_difference(train_data)
-        add_differentials(train_data)
+        # 特徴量生成
+        temp_train_data = train_data.copy()  # データの再利用のためコピー
+        temp_train_data = calculate_form(temp_train_data, gamma, teams)
+        temp_train_data = add_streaks(temp_train_data, k)
+        temp_train_data = add_team_performance_to_matches(temp_train_data, k)
+        temp_train_data = merge_ratings(temp_train_data, ratings_df)
+        temp_train_data = add_goal_difference(temp_train_data)
+        temp_train_data = add_differentials(temp_train_data)
 
-        X_train = train_data[features]
-        y_train = train_data["FTR"]
+        # モデル学習
+        X_train = temp_train_data[features]
+        y_train = temp_train_data["FTR"]
+        rf_model.fit(X_train, y_train)
 
-        rf_model_temp = RandomForestClassifier(**best_random_params, random_state=42)
-        rf_model_temp.fit(X_train, y_train)
-        score = rf_model_temp.score(X_train, y_train)
+        # スコア計算
+        score = rf_model.score(X_train, y_train)
 
+        # 最良の k と gamma を更新
         if score > best_score:
             best_k = k
             best_gamma = gamma
             best_score = score
 
-print(f"Best k: {best_k}, Best gamma: {best_gamma}")
+# 最適な k と gamma の結果を出力
+print(f"Best k: {best_k}, Best gamma: {best_gamma}, Best score: {best_score}")

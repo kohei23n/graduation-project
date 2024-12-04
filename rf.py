@@ -7,6 +7,7 @@ from components.data_processing import (
     add_goal_difference,
     add_differentials,
 )
+from components.model_evaluation import evaluate_rps
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.metrics import accuracy_score, classification_report
@@ -173,10 +174,9 @@ rf_model.fit(X_train, y_train)
 # テストデータでの予測
 y_pred = rf_model.predict(X_test)
 
-# 評価
-test_accuracy = accuracy_score(y_test, y_pred)
-print(f"Test Accuracy: {test_accuracy:.3f}")
-print(classification_report(y_test, y_pred))
+# RPSの計算
+mean_rps = evaluate_rps(rf_model, X_test, y_test)
+print(f"Mean RPS: {mean_rps:.3f}")
 
 # 特徴量の重要度
 feature_importances = rf_model.feature_importances_
