@@ -55,8 +55,8 @@ train_data = add_Diffs(train_data)
 test_data = add_Diffs(test_data)
 
 ## これまでのデータを HTML で表示
-train_data.to_html("train_data.html")
-test_data.to_html("test_data.html")
+train_data.to_html("./htmldata/train_data.html")
+test_data.to_html("./htmldata/test_data.html")
 
 ### モデルの学習と評価
 features = [
