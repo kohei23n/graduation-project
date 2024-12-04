@@ -18,9 +18,7 @@ urls = [
 seasons = list(range(2023, 2013, -1))
 
 scraper = cloudscraper.CloudScraper()
-scraper.headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/"
-}
+scraper.headers = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/'}
 
 # Define the data-title attributes
 data_titles = ["Name", "ATT", "MID", "DEF", "OVR"]
@@ -34,57 +32,57 @@ for url, season in zip(urls, seasons):
     page = scraper.get(url, timeout=100)
 
     # Parse the HTML using BeautifulSoup
-    soup = BeautifulSoup(page.text, "html.parser")
+    soup = BeautifulSoup(page.text, 'html.parser')
 
     # Iterate through each row (<tr>)
-    for row in soup.find_all("tr"):
+    for row in soup.find_all('tr'):
         # Find all <td> elements in the row with the specified data-title attributes
         row_data = {}
         for data_title in data_titles:
-            td = row.find("td", {"data-title": data_title})
+            td = row.find('td', {'data-title': data_title})
             if td:
                 row_data[data_title] = td.get_text(strip=True)
-
+        
         # Add season column if data is found
         if row_data:
-            row_data["Season"] = season
+            row_data['Season'] = season
             all_data.append(row_data)
 
 # Convert all data to a DataFrame
 df = pd.DataFrame(all_data)
 
 # Rename the 'Name' column to 'Team'
-df.rename(columns={"Name": "Team"}, inplace=True)
+df.rename(columns={'Name': 'Team'}, inplace=True)
 
 # Define the replacements as a dictionary
 replacements = {
-    "AFC Bournemouth": "Bournemouth",
-    "Brighton & Hove Albion": "Brighton",
-    "Cardiff City": "Cardiff",
-    "Huddersfield Town": "Huddersfield",
-    "Hull City": "Hull",
-    "Leicester City": "Leicester",
-    "Luton Town": "Luton",
-    "Leeds United": "Leeds",
-    "Manchester City": "Man City",
-    "Manchester United": "Man United",
-    "Manchester Utd": "Man United",
-    "Newcastle United": "Newcastle",
-    "Newcastle Utd": "Newcastle",
-    "Norwich City": "Norwich",
-    "Nottingham Forest": "Nott'm Forest",
-    "Queens Park Rangers": "QPR",
-    "Spurs": "Tottenham",
+    'AFC Bournemouth': 'Bournemouth',
+    'Brighton & Hove Albion': 'Brighton',
+    'Cardiff City': 'Cardiff',
+    'Huddersfield Town': 'Huddersfield',
+    'Hull City': 'Hull',
+    'Leicester City': 'Leicester',
+    'Luton Town': 'Luton',
+    'Leeds United': 'Leeds',
+    'Manchester City': 'Man City',
+    'Manchester United': 'Man United',
+    'Manchester Utd': 'Man United',
+    'NewcAwayStreakle United': 'NewcAwayStreakle',
+    'NewcAwayStreakle Utd': 'NewcAwayStreakle',
+    'Norwich City': 'Norwich',
+    'Nottingham Forest': "Nott'm Forest",
+    'Queens Park Rangers': 'QPR',
+    'Spurs': 'Tottenham',
     "Stoke City": "Stoke",
-    "Swansea City": "Swansea",
-    "Tottenham Hotspur": "Tottenham",
-    "West Bromwich Albion": "West Brom",
-    "West Ham United": "West Ham",
-    "Wolverhampton Wanderers": "Wolves",
+    'Swansea City': 'Swansea',
+    'Tottenham Hotspur': 'Tottenham',
+    'West Bromwich Albion': 'West Brom',
+    'West Ham United': 'West Ham',
+    'Wolverhampton Wanderers': 'Wolves',
 }
 
 # Replace the values in the 'Team' column based on the dictionary
-df["Team"] = df["Team"].replace(replacements)
+df['Team'] = df['Team'].replace(replacements)
 
 # Save to CSV
-df.to_csv("./csv/ratings_data.csv", index=False)
+df.to_csv('./csv/ratings_data.csv', index=False)

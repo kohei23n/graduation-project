@@ -138,36 +138,36 @@ def add_streaks(df, k):
     return df
 
 
-# データ加工3: "PAwayStreak k..." データの追加
+# データ加工3: "Past k..." データの追加
 
 
 ## 過去のパフォーマンス指標を取得する関数
-def get_pAwayStreak_performance(team_name, specified_date, df, k):
+def get_past_performance(team_name, specified_date, df, k):
     season = df.loc[df["Date"] == specified_date, "Season"].values[0]
-    pAwayStreak_matches = df[
+    past_matches = df[
         ((df["HomeTeam"] == team_name) | (df["AwayTeam"] == team_name))
         & (df["Date"] < specified_date)
         & (df["Season"] == season)
     ]
-    pAwayStreak_matches = pAwayStreak_matches.sort_values(by="Date", ascending=False).head(k)
+    past_matches = past_matches.sort_values(by="Date", ascending=False).head(k)
 
-    if len(pAwayStreak_matches) < k:
+    if len(past_matches) < k:
         return None, None, None
 
     total_goals = np.where(
-        pAwayStreak_matches["HomeTeam"] == team_name,
-        pAwayStreak_matches["FTHG"],
-        pAwayStreak_matches["FTAG"],
+        past_matches["HomeTeam"] == team_name,
+        past_matches["FTHG"],
+        past_matches["FTAG"],
     ).sum()
     avg_goals = total_goals / k
 
     total_sot = np.where(
-        pAwayStreak_matches["HomeTeam"] == team_name, pAwayStreak_matches["HomeStreak"], pAwayStreak_matches["AwayStreak"]
+        past_matches["HomeTeam"] == team_name, past_matches["HomeStreak"], past_matches["AwayStreak"]
     ).sum()
     avg_sot = total_sot / k
 
     total_corners = np.where(
-        pAwayStreak_matches["HomeTeam"] == team_name, pAwayStreak_matches["HC"], pAwayStreak_matches["AC"]
+        past_matches["HomeTeam"] == team_name, past_matches["HC"], past_matches["AC"]
     ).sum()
     avg_corners = total_corners / k
 
