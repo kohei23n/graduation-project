@@ -193,12 +193,12 @@ def add_team_performance_to_matches(df, k):
             away_sot.append(None)
             away_corners.append(None)
         else:
-            home_performance = get_pAwayStreak_performance(home_team, date, df, k)
+            home_performance = get_past_performance(home_team, date, df, k)
             home_goals.append(home_performance[0])
             home_sot.append(home_performance[1])
             home_corners.append(home_performance[2])
 
-            away_performance = get_pAwayStreak_performance(away_team, date, df, k)
+            away_performance = get_past_performance(away_team, date, df, k)
             away_goals.append(away_performance[0])
             away_sot.append(away_performance[1])
             away_corners.append(away_performance[2])
