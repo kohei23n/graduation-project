@@ -5,7 +5,7 @@ from components.data_processing import (
     add_team_performance_to_matches,
     merge_ratings,
     add_goal_difference,
-    add_differentials,
+    add_Diffs,
 )
 from sklearn.ensemble import RandomForestClassifier
 
@@ -24,39 +24,39 @@ train_data = match_data_df[match_data_df["Season"] < (latest_season - 1)].copy()
 teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
 
 features = [
-    "HForm",
-    "AForm",
-    "HSt",
-    "ASt",
-    "HSTKPP",
-    "ASTKPP",
-    "HCKPP",
-    "HGKPP",
-    "AGKPP",
-    "ACKPP",
-    "HAttack",
-    "AAttack",
-    "HMidField",
-    "AMidField",
-    "HDefence",
-    "ADefence",
-    "HOverall",
-    "AOverall",
-    "HTGD",
-    "ATGD",
-    "HStWeighted",
-    "AStWeighted",
-    "FormDifferential",
-    "StDifferential",
-    "STKPP",
-    "GKPP",
-    "CKPP",
-    "RelAttack",
-    "RelMidField",
-    "RelDefence",
-    "RelOverall",
-    "GDDifferential",
-    "StWeightedDifferential",
+    "HomeForm",
+    "AwayForm",
+    "HomeStreak",
+    "AwayStreak",
+    "HomeSOT",
+    "AwaySOT",
+    "HomeCorners",
+    "HomeGoals",
+    "AwayGoals",
+    "AwayCorners",
+    "HomeAttackR",
+    "AwayAttackR",
+    "HomeMidfieldR",
+    "AwayMidfieldR",
+    "HomeDefenceR",
+    "AwayDefenceR",
+    "HomeOverallR",
+    "AwayOverallR",
+    "HomeGD",
+    "AwayGD",
+    "HomeStreakWeighted",
+    "AwayStreakWeighted",
+    "FormDiff",
+    "StreakDiff",
+    "SOTDiff",
+    "GoalsDiff",
+    "CornersDiff",
+    "ARDiff",
+    "MRDiff",
+    "DRDiff",
+    "ORDiff",
+    "GDDiff",
+    "StreakWeightedDiff",
 ]
 
 # k と gamma の最適化の範囲
@@ -81,7 +81,7 @@ for k in k_values:
         temp_train_data = add_team_performance_to_matches(temp_train_data, k)
         temp_train_data = merge_ratings(temp_train_data, ratings_df)
         temp_train_data = add_goal_difference(temp_train_data)
-        temp_train_data = add_differentials(temp_train_data)
+        temp_train_data = add_Diffs(temp_train_data)
 
         # モデル学習
         X_train = temp_train_data[features]

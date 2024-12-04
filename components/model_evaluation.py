@@ -16,7 +16,7 @@ def evaluate_rps(model, X_test, y_test):
     y_probs = model.predict_proba(X_test)
     # 正解ラベルをワンホットエンコード
     encoder = OneHotEncoder()
-    y_test_onehot = encoder.fit_transform(y_test.reshape(-1, 1)).toarray()
+    y_test_onehot = encoder.fit_transform(y_test.to_numpy().reshape(-1, 1)).toarray()
     # 各サンプルのRPSを計算
     rps_scores = [
         calculate_rps(y_probs[i], y_test_onehot[i]) for i in range(len(y_test))

@@ -5,12 +5,11 @@ from components.data_processing import (
     add_team_performance_to_matches,
     merge_ratings,
     add_goal_difference,
-    add_differentials,
+    add_Diffs,
 )
 from components.model_evaluation import evaluate_rps
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
-from sklearn.metrics import accuracy_score, classification_report
 
 # データの読み込みと準備
 match_data_df = pd.read_csv("./csv/match_data_10yr.csv")
@@ -27,7 +26,7 @@ test_data = match_data_df[
 train_data = match_data_df[match_data_df["Season"] < (latest_season - 1)].copy()
 
 # データ加工1：Form の計算
-gamma = 0.33 # γ の設定
+gamma = 0.33  # γ の設定
 teams = set(match_data_df["HomeTeam"]).union(
     set(match_data_df["AwayTeam"])
 )  # 各チームの一覧
@@ -35,11 +34,11 @@ train_data = calculate_form(train_data, gamma, teams)
 test_data = calculate_form(test_data, gamma, teams)
 
 # データ加工2： Streak, Weighted Streak の計算
-k = 6 # k の設定
+k = 6  # k の設定
 train_data = add_streaks(train_data, k)
 test_data = add_streaks(test_data, k)
 
-# データ加工3: "Past k..." データの追加
+# データ加工3: "PAwayStreak k..." データの追加
 train_data = add_team_performance_to_matches(train_data, k)
 test_data = add_team_performance_to_matches(test_data, k)
 
@@ -51,9 +50,9 @@ test_data = merge_ratings(test_data, ratings_df)
 train_data = add_goal_difference(train_data)
 test_data = add_goal_difference(test_data)
 
-# データ加工6: Differential Data
-train_data = add_differentials(train_data)
-test_data = add_differentials(test_data)
+# データ加工6: Diff Data
+train_data = add_Diffs(train_data)
+test_data = add_Diffs(test_data)
 
 ## これまでのデータを HTML で表示
 train_data.to_html("train_data.html")
@@ -61,39 +60,39 @@ test_data.to_html("test_data.html")
 
 ### モデルの学習と評価
 features = [
-    "HForm",
-    "AForm",
-    "HSt",
-    "ASt",
-    "HSTKPP",
-    "ASTKPP",
-    "HCKPP",
-    "HGKPP",
-    "AGKPP",
-    "ACKPP",
-    "HAttack",
-    "AAttack",
-    "HMidField",
-    "AMidField",
-    "HDefence",
-    "ADefence",
-    "HOverall",
-    "AOverall",
-    "HTGD",
-    "ATGD",
-    "HStWeighted",
-    "AStWeighted",
-    "FormDifferential",
-    "StDifferential",
-    "STKPP",
-    "GKPP",
-    "CKPP",
-    "RelAttack",
-    "RelMidField",
-    "RelDefence",
-    "RelOverall",
-    "GDDifferential",
-    "StWeightedDifferential",
+    "HomeForm",
+    "AwayForm",
+    "HomeStreak",
+    "AwayStreak",
+    "HomeSOT",
+    "AwaySOT",
+    "HomeGoals",
+    "AwayGoals",
+    "HomeCorners",
+    "AwayCorners",
+    "HomeAttackR",
+    "AwayAttackR",
+    "HomeMidfieldR",
+    "AwayMidfieldR",
+    "HomeDefenceR",
+    "AwayDefenceR",
+    "HomeOverallR",
+    "AwayOverallR",
+    "HomeGD",
+    "AwayGD",
+    "HomeStreakWeighted",
+    "AwayStreakWeighted",
+    "FormDiff",
+    "StreakDiff",
+    "SOTDiff",
+    "GoalsDiff",
+    "CornersDiff",
+    "ARDiff",
+    "MRDiff",
+    "DRDiff",
+    "ORDiff",
+    "GDDiff",
+    "StreakWeightedDiff",
 ]
 
 X_train = train_data[features]

@@ -63,8 +63,8 @@ def calculate_form(df, gamma, teams):
         team_form[home_team] = new_home_form
         team_form[away_team] = new_away_form
 
-    df.loc[:, "HForm"] = home_forms
-    df.loc[:, "AForm"] = away_forms
+    df.loc[:, "HomeForm"] = home_forms
+    df.loc[:, "AwayForm"] = away_forms
     return df
 
 
@@ -86,18 +86,18 @@ def get_result_points(result, team_type):
 ## 直近k試合のStreakとWeighted Streakを計算する関数
 def calculate_streaks(team_name, current_date, df, k):
     season = df.loc[df["Date"] == current_date, "Season"].values[0]
-    past_matches = df[
+    pAwayStreak_matches = df[
         ((df["HomeTeam"] == team_name) | (df["AwayTeam"] == team_name))
         & (df["Date"] < current_date)
         & (df["Season"] == season)
     ]
-    past_matches = past_matches.sort_values(by="Date", ascending=False).head(k)
+    pAwayStreak_matches = pAwayStreak_matches.sort_values(by="Date", ascending=False).head(k)
 
-    if len(past_matches) < k:
+    if len(pAwayStreak_matches) < k:
         return None, None
 
     results = []
-    for _, game in past_matches.iterrows():
+    for _, game in pAwayStreak_matches.iterrows():
         if game["HomeTeam"] == team_name:
             points = get_result_points(game["FTR"], "home")
         else:
@@ -130,44 +130,44 @@ def add_streaks(df, k):
         away_streaks.append(away_streak)
         away_weighted_streaks.append(away_weighted_streak)
 
-    df.loc[:, "HSt"] = home_streaks
-    df.loc[:, "HStWeighted"] = home_weighted_streaks
-    df.loc[:, "ASt"] = away_streaks
-    df.loc[:, "AStWeighted"] = away_weighted_streaks
+    df.loc[:, "HomeStreak"] = home_streaks
+    df.loc[:, "HomeStreakWeighted"] = home_weighted_streaks
+    df.loc[:, "AwayStreak"] = away_streaks
+    df.loc[:, "AwayStreakWeighted"] = away_weighted_streaks
 
     return df
 
 
-# データ加工3: "Past k..." データの追加
+# データ加工3: "PAwayStreak k..." データの追加
 
 
 ## 過去のパフォーマンス指標を取得する関数
-def get_past_performance(team_name, specified_date, df, k):
+def get_pAwayStreak_performance(team_name, specified_date, df, k):
     season = df.loc[df["Date"] == specified_date, "Season"].values[0]
-    past_matches = df[
+    pAwayStreak_matches = df[
         ((df["HomeTeam"] == team_name) | (df["AwayTeam"] == team_name))
         & (df["Date"] < specified_date)
         & (df["Season"] == season)
     ]
-    past_matches = past_matches.sort_values(by="Date", ascending=False).head(k)
+    pAwayStreak_matches = pAwayStreak_matches.sort_values(by="Date", ascending=False).head(k)
 
-    if len(past_matches) < k:
+    if len(pAwayStreak_matches) < k:
         return None, None, None
 
     total_goals = np.where(
-        past_matches["HomeTeam"] == team_name,
-        past_matches["FTHG"],
-        past_matches["FTAG"],
+        pAwayStreak_matches["HomeTeam"] == team_name,
+        pAwayStreak_matches["FTHG"],
+        pAwayStreak_matches["FTAG"],
     ).sum()
     avg_goals = total_goals / k
 
     total_sot = np.where(
-        past_matches["HomeTeam"] == team_name, past_matches["HST"], past_matches["AST"]
+        pAwayStreak_matches["HomeTeam"] == team_name, pAwayStreak_matches["HomeStreak"], pAwayStreak_matches["AwayStreak"]
     ).sum()
     avg_sot = total_sot / k
 
     total_corners = np.where(
-        past_matches["HomeTeam"] == team_name, past_matches["HC"], past_matches["AC"]
+        pAwayStreak_matches["HomeTeam"] == team_name, pAwayStreak_matches["HC"], pAwayStreak_matches["AC"]
     ).sum()
     avg_corners = total_corners / k
 
@@ -193,22 +193,22 @@ def add_team_performance_to_matches(df, k):
             away_sot.append(None)
             away_corners.append(None)
         else:
-            home_performance = get_past_performance(home_team, date, df, k)
+            home_performance = get_pAwayStreak_performance(home_team, date, df, k)
             home_goals.append(home_performance[0])
             home_sot.append(home_performance[1])
             home_corners.append(home_performance[2])
 
-            away_performance = get_past_performance(away_team, date, df, k)
+            away_performance = get_pAwayStreak_performance(away_team, date, df, k)
             away_goals.append(away_performance[0])
             away_sot.append(away_performance[1])
             away_corners.append(away_performance[2])
 
-    df.loc[:, "HGKPP"] = home_goals
-    df.loc[:, "HSTKPP"] = home_sot
-    df.loc[:, "HCKPP"] = home_corners
-    df.loc[:, "AGKPP"] = away_goals
-    df.loc[:, "ASTKPP"] = away_sot
-    df.loc[:, "ACKPP"] = away_corners
+    df.loc[:, "HomeGoals"] = home_goals
+    df.loc[:, "HomeSOT"] = home_sot
+    df.loc[:, "HomeCorners"] = home_corners
+    df.loc[:, "AwayGoals"] = away_goals
+    df.loc[:, "AwaySOT"] = away_sot
+    df.loc[:, "AwayCorners"] = away_corners
 
     return df
 
@@ -224,10 +224,10 @@ def merge_ratings(df, ratings_df):
         )
         .rename(
             columns={
-                "ATT": "HAttack",
-                "MID": "HMidField",
-                "DEF": "HDefence",
-                "OVR": "HOverall",
+                "ATT": "HomeAttackR",
+                "MID": "HomeMidfieldR",
+                "DEF": "HomeDefenceR",
+                "OVR": "HomeOverallR",
             }
         )
         .drop(columns=["Team"])
@@ -238,10 +238,10 @@ def merge_ratings(df, ratings_df):
         )
         .rename(
             columns={
-                "ATT": "AAttack",
-                "MID": "AMidField",
-                "DEF": "ADefence",
-                "OVR": "AOverall",
+                "ATT": "AwayAttackR",
+                "MID": "AwayMidfieldR",
+                "DEF": "AwayDefenceR",
+                "OVR": "AwayOverallR",
             }
         )
         .drop(columns=["Team"])
@@ -275,28 +275,28 @@ def add_goal_difference(df):
             team_gd[home_team] += home_goals - away_goals
             team_gd[away_team] += away_goals - home_goals
 
-    df.loc[:, "HTGD"] = home_gd_list
-    df.loc[:, "ATGD"] = away_gd_list
+    df.loc[:, "HomeGD"] = home_gd_list
+    df.loc[:, "AwayGD"] = away_gd_list
 
     return df
 
 
-# データ加工6: Differential Data
+# データ加工6: Diff Data
 
 
-## Differential Dataを追加する関数
-def add_differentials(df):
-    df["FormDifferential"] = df["HForm"] - df["AForm"]
-    df["StDifferential"] = df["HSt"] - df["ASt"]
-    df["STKPP"] = df["HSTKPP"] - df["ASTKPP"]
-    df["GKPP"] = df["HGKPP"] - df["AGKPP"]
-    df["CKPP"] = df["HCKPP"] - df["ACKPP"]
-    df["RelAttack"] = df["HAttack"] - df["AAttack"]
-    df["RelMidField"] = df["HMidField"] - df["AMidField"]
-    df["RelDefence"] = df["HDefence"] - df["ADefence"]
-    df["RelOverall"] = df["HOverall"] - df["AOverall"]
-    df["GDDifferential"] = df["HTGD"] - df["ATGD"]
-    df["StWeightedDifferential"] = df["HStWeighted"] - df["AStWeighted"]
+## Diff Dataを追加する関数
+def add_Diffs(df):
+    df["FormDiff"] = df["HomeForm"] - df["AwayForm"]
+    df["StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
+    df["SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
+    df["GoalsDiff"] = df["HomeGoals"] - df["AwayGoals"]
+    df["CornersDiff"] = df["HomeCorners"] - df["AwayCorners"]
+    df["ARDiff"] = df["HomeAttackR"] - df["AwayAttackR"]
+    df["MRDiff"] = df["HomeMidfieldR"] - df["AwayMidfieldR"]
+    df["DRDiff"] = df["HomeDefenceR"] - df["AwayDefenceR"]
+    df["ORDiff"] = df["HomeOverallR"] - df["AwayOverallR"]
+    df["GDDiff"] = df["HomeGD"] - df["AwayGD"]
+    df["StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
     return df
 
 
@@ -306,7 +306,7 @@ match_data_df = add_streaks(match_data_df, default_k)
 match_data_df = add_team_performance_to_matches(match_data_df, default_k)
 match_data_df = merge_ratings(match_data_df, ratings_df)
 match_data_df = add_goal_difference(match_data_df)
-match_data_df = add_differentials(match_data_df)
+match_data_df = add_Diffs(match_data_df)
 
 # 加工済みデータを CSV に出力
 match_data_df.to_csv("./csv/engineered_data.csv", index=False)
