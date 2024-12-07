@@ -167,7 +167,7 @@ best_params = {
 }
 
 # 最適なパラメータでランダムフォレストモデルを構築
-rf_model = RandomForestClassifier(**best_params, random_state=42)
+rf_model = RandomForestClassifier(**best_params, random_state=42, verbose=2)
 rf_model.fit(X_train, y_train)
 
 # テストデータでの予測

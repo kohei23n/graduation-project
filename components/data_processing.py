@@ -63,6 +63,9 @@ def calculate_form(df, gamma, teams):
         team_form[home_team] = new_home_form
         team_form[away_team] = new_away_form
 
+    df["HomeForm"] = pd.Series(dtype="float64")
+    df["AwayForm"] = pd.Series(dtype="float64")
+    
     df.loc[:, "HomeForm"] = home_forms
     df.loc[:, "AwayForm"] = away_forms
     return df
@@ -94,7 +97,7 @@ def calculate_streaks(team_name, current_date, df, k):
     past_matches = past_matches.sort_values(by="Date", ascending=False).head(k)
 
     if len(past_matches) < k:
-        return None, None
+        return np.nan, np.nan
 
     results = []
     for _, game in past_matches.iterrows():
@@ -129,6 +132,11 @@ def add_streaks(df, k):
         home_weighted_streaks.append(home_weighted_streak)
         away_streaks.append(away_streak)
         away_weighted_streaks.append(away_weighted_streak)
+        
+    df["HomeStreak"] = pd.Series(dtype="float64")
+    df["HomeStreakWeighted"] = pd.Series(dtype="float64")
+    df["AwayStreak"] = pd.Series(dtype="float64")
+    df["AwayStreakWeighted"] = pd.Series(dtype="float64")
 
     df.loc[:, "HomeStreak"] = home_streaks
     df.loc[:, "HomeStreakWeighted"] = home_weighted_streaks
@@ -152,7 +160,7 @@ def get_past_performance(team_name, specified_date, df, k):
     past_matches = past_matches.sort_values(by="Date", ascending=False).head(k)
 
     if len(past_matches) < k:
-        return None, None, None
+        return np.nan, np.nan, np.nan
 
     total_goals = np.where(
         past_matches["HomeTeam"] == team_name,
@@ -186,12 +194,12 @@ def add_team_performance_to_matches(df, k):
         season = row["Season"]
 
         if idx < k * 10:
-            home_goals.append(None)
-            home_sot.append(None)
-            home_corners.append(None)
-            away_goals.append(None)
-            away_sot.append(None)
-            away_corners.append(None)
+            home_goals.append(np.nan)
+            home_sot.append(np.nan)
+            home_corners.append(np.nan)
+            away_goals.append(np.nan)
+            away_sot.append(np.nan)
+            away_corners.append(np.nan)
         else:
             home_performance = get_past_performance(home_team, date, df, k)
             home_goals.append(home_performance[0])
@@ -202,6 +210,13 @@ def add_team_performance_to_matches(df, k):
             away_goals.append(away_performance[0])
             away_sot.append(away_performance[1])
             away_corners.append(away_performance[2])
+
+    df["HomeGoals"] = pd.Series(dtype="float64")
+    df["HomeSOT"] = pd.Series(dtype="float64")
+    df["HomeCorners"] = pd.Series(dtype="float64")
+    df["AwayGoals"] = pd.Series(dtype="float64")
+    df["AwaySOT"] = pd.Series(dtype="float64")
+    df["AwayCorners"] = pd.Series(dtype="float64")
 
     df.loc[:, "HomeGoals"] = home_goals
     df.loc[:, "HomeSOT"] = home_sot
