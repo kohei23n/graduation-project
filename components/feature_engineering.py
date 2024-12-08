@@ -300,7 +300,7 @@ def add_goal_difference(df):
 
 
 ## Diff Dataを追加する関数
-def add_Diffs(df):
+def add_diffs(df):
     df["FormDiff"] = df["HomeForm"] - df["AwayForm"]
     df["StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
     df["SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
@@ -313,15 +313,3 @@ def add_Diffs(df):
     df["GDDiff"] = df["HomeGD"] - df["AwayGD"]
     df["StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
     return df
-
-
-# 特徴量生成の実行
-match_data_df = calculate_form(match_data_df, default_gamma, teams)
-match_data_df = add_streaks(match_data_df, default_k)
-match_data_df = add_team_performance_to_matches(match_data_df, default_k)
-match_data_df = merge_ratings(match_data_df, ratings_df)
-match_data_df = add_goal_difference(match_data_df)
-match_data_df = add_Diffs(match_data_df)
-
-# 加工済みデータを CSV に出力
-match_data_df.to_csv("./csv/engineered_data.csv", index=False)

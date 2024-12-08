@@ -1,18 +1,18 @@
 import pandas as pd
-from components.data_processing import (
+from components.feature_engineering import (
     calculate_form,
     add_streaks,
     add_team_performance_to_matches,
     merge_ratings,
     add_goal_difference,
-    add_Diffs,
+    add_diffs,
 )
 from components.model_evaluation import evaluate_rps
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 
 # データの読み込みと準備
-match_data_df = pd.read_csv("./csv/match_data_10yr.csv")
+match_data_df = pd.read_csv("./csv/rf_engineered_data.csv")
 ratings_df = pd.read_csv("./csv/ratings_data.csv")
 match_data_df["Date"] = pd.to_datetime(
     match_data_df["Date"], format="%d/%m/%Y", dayfirst=True
@@ -26,7 +26,7 @@ test_data = match_data_df[
 train_data = match_data_df[match_data_df["Season"] < (latest_season - 1)].copy()
 
 # データ加工1：Form の計算
-gamma = 0.33  # γ の設定
+gamma = 0.1  # γ の設定
 teams = set(match_data_df["HomeTeam"]).union(
     set(match_data_df["AwayTeam"])
 )  # 各チームの一覧
@@ -34,7 +34,7 @@ train_data = calculate_form(train_data, gamma, teams)
 test_data = calculate_form(test_data, gamma, teams)
 
 # データ加工2： Streak, Weighted Streak の計算
-k = 6  # k の設定
+k = 5  # k の設定
 train_data = add_streaks(train_data, k)
 test_data = add_streaks(test_data, k)
 
@@ -51,8 +51,8 @@ train_data = add_goal_difference(train_data)
 test_data = add_goal_difference(test_data)
 
 # データ加工6: Diff Data
-train_data = add_Diffs(train_data)
-test_data = add_Diffs(test_data)
+train_data = add_diffs(train_data)
+test_data = add_diffs(test_data)
 
 ## これまでのデータを HTML で表示
 train_data.to_html("./htmldata/train_data.html")
