@@ -292,6 +292,7 @@ def add_goal_difference(df):
 
 ## Diff Dataを追加する関数
 def add_diffs(df):
+    df = df.loc[:, ~df.columns.duplicated()]
     df["FormDiff"] = df["HomeForm"] - df["AwayForm"]
     df["StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
     df["GoalsDiff"] = df["HomeGoals"] - df["AwayGoals"]
