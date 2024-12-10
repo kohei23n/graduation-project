@@ -18,30 +18,22 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logging.info("Loading data...")
 
 # データの読み込みと準備
-match_data_df = pd.read_csv("./csv/match_data_10yr.csv")
+match_data_df = pd.read_csv("./csv/match_data.csv")
 ratings_df = pd.read_csv("./csv/ratings_data.csv")
 match_data_df["Date"] = pd.to_datetime(
     match_data_df["Date"], format="%d/%m/%Y", dayfirst=True
 )
 
 # 訓練データとテストデータに分割
-latest_season = match_data_df["Season"].max()
-test_data = match_data_df[match_data_df["Season"] >= (latest_season - 1)].copy()
-train_data = match_data_df[match_data_df["Season"] < (latest_season - 1)].copy()
+latest_seasons = match_data_df["Season"].unique()[-2:]  # 最新2シーズン
+train_data = match_data_df[match_data_df["Season"].isin(latest_seasons)]
+test_data = match_data_df[match_data_df["Season"] == latest_seasons[-1]]
 
 teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
 
 features = [
     "HomeForm",
     "AwayForm",
-    "HomeStreak",
-    "AwayStreak",
-    "HomeSOT",
-    "AwaySOT",
-    "HomeCorners",
-    "HomeGoals",
-    "AwayGoals",
-    "AwayCorners",
     "HomeAttackR",
     "AwayAttackR",
     "HomeMidfieldR",
@@ -50,15 +42,23 @@ features = [
     "AwayDefenceR",
     "HomeOverallR",
     "AwayOverallR",
+    "HomeStreak",
+    "AwayStreak",
+    "HomeGoals",
+    "HomeShots",
+    "HomeSOT",
+    "AwayGoals",
+    "AwayShots",
+    "AwaySOT",
     "HomeGD",
     "AwayGD",
     "HomeStreakWeighted",
     "AwayStreakWeighted",
     "FormDiff",
     "StreakDiff",
-    "SOTDiff",
     "GoalsDiff",
-    "CornersDiff",
+    "ShotsDiff",
+    "SOTDiff",
     "ARDiff",
     "MRDiff",
     "DRDiff",
@@ -89,7 +89,6 @@ def seasonwise_split(data, n_splits):
         train_idx = data[data["Season"].isin(train_seasons)].index
         val_idx = data[data["Season"] == val_season].index
         yield train_idx, val_idx
-        
 
 # ハイパーパラメータ最適化
 logging.info("Starting hyperparameter tuning...")

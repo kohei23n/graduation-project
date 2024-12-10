@@ -2,7 +2,7 @@ import cloudscraper
 from bs4 import BeautifulSoup
 import pandas as pd
 
-# Define URLS
+# URL の定義
 urls = [
     "https://www.fifaindex.com/teams/?league=13&order=desc",
     "https://www.fifaindex.com/teams/fifa23_589/?league=13&order=desc",
@@ -15,35 +15,36 @@ urls = [
     "https://www.fifaindex.com/teams/fifa16_73/?league=13&order=desc",
     "https://www.fifaindex.com/teams/fifa15_14/?league=13&order=desc",
 ]
-seasons = list(range(2023, 2013, -1))
+
+# "2023-24", "2022-23" の形式で作成
+seasons = [f"{year}-{str(year+1)[-2:]}" for year in range(2023, 2013, -1)]
 
 scraper = cloudscraper.CloudScraper()
 scraper.headers = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/'}
 
-# Define the data-title attributes
+# データのタイトルを定義
 data_titles = ["Name", "ATT", "MID", "DEF", "OVR"]
 
-# Initialize a list to store all data
 all_data = []
 
-# Loop through each URL and season
+# すべての URL に対して繰り返し処理
 for url, season in zip(urls, seasons):
     print(f"Scraping URL for season {season}: {url}")
     page = scraper.get(url, timeout=100)
 
-    # Parse the HTML using BeautifulSoup
+    # HTML を解析
     soup = BeautifulSoup(page.text, 'html.parser')
 
-    # Iterate through each row (<tr>)
+    # すべての <tr> 要素を取得
     for row in soup.find_all('tr'):
-        # Find all <td> elements in the row with the specified data-title attributes
+        # <td> 要素の data-title 属性を取得
         row_data = {}
         for data_title in data_titles:
             td = row.find('td', {'data-title': data_title})
             if td:
                 row_data[data_title] = td.get_text(strip=True)
         
-        # Add season column if data is found
+        # データがある場合は、Season キーを追加
         if row_data:
             row_data['Season'] = season
             all_data.append(row_data)

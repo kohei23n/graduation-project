@@ -8,14 +8,6 @@ match_data_df["Date"] = pd.to_datetime(
     match_data_df["Date"], format="%d/%m/%Y", dayfirst=True
 )
 
-# 訓練データとテストデータに分割
-latest_season = match_data_df["Season"].max()
-
-teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
-
-default_k = 6
-default_gamma = 0.33
-
 # データ加工1：Form
 
 
@@ -65,7 +57,7 @@ def calculate_form(df, gamma, teams):
 
     df["HomeForm"] = pd.Series(dtype="float64")
     df["AwayForm"] = pd.Series(dtype="float64")
-    
+
     df.loc[:, "HomeForm"] = home_forms
     df.loc[:, "AwayForm"] = away_forms
     return df
@@ -132,7 +124,7 @@ def add_streaks(df, k):
         home_weighted_streaks.append(home_weighted_streak)
         away_streaks.append(away_streak)
         away_weighted_streaks.append(away_weighted_streak)
-        
+
     df["HomeStreak"] = pd.Series(dtype="float64")
     df["HomeStreakWeighted"] = pd.Series(dtype="float64")
     df["AwayStreak"] = pd.Series(dtype="float64")
@@ -168,24 +160,24 @@ def get_past_performance(team_name, specified_date, df, k):
         past_matches["FTAG"],
     ).sum()
     avg_goals = total_goals / k
-    
-    total_sot = np.where(
-        past_matches["HomeTeam"] == team_name, past_matches["HST"], past_matches["AST"]
-    ).sum()
-    avg_sot = total_sot / k
-    
+
     total_shots = np.where(
         past_matches["HomeTeam"] == team_name, past_matches["HS"], past_matches["AS"]
     ).sum()
     avg_shots = total_shots / k
 
-    return avg_goals, avg_sot, avg_shots
+    total_sot = np.where(
+        past_matches["HomeTeam"] == team_name, past_matches["HST"], past_matches["AST"]
+    ).sum()
+    avg_sot = total_sot / k
+
+    return avg_goals, avg_shots, avg_sot
 
 
 ## 各試合にチームパフォーマンスを追加する関数
 def add_team_performance_to_matches(df, k):
-    home_goals, home_sot, home_shots = [], [], []
-    away_goals, away_sot, away_shots = [], [], []
+    home_goals, home_shots, home_sot = [], [], []
+    away_goals, away_shots, away_sot = [], [], []
 
     for idx, row in df.iterrows():
         home_team = row["HomeTeam"]
@@ -212,18 +204,18 @@ def add_team_performance_to_matches(df, k):
             away_shots.append(away_performance[2])
 
     df["HomeGoals"] = pd.Series(dtype="float64")
-    df["HomeSOT"] = pd.Series(dtype="float64")
     df["HomeShots"] = pd.Series(dtype="float64")
+    df["HomeSOT"] = pd.Series(dtype="float64")
     df["AwayGoals"] = pd.Series(dtype="float64")
-    df["AwaySOT"] = pd.Series(dtype="float64")
     df["AwayShots"] = pd.Series(dtype="float64")
+    df["AwaySOT"] = pd.Series(dtype="float64")
 
     df.loc[:, "HomeGoals"] = home_goals
-    df.loc[:, "HomeSOT"] = home_sot
     df.loc[:, "HomeShots"] = home_shots
+    df.loc[:, "HomeSOT"] = home_sot
     df.loc[:, "AwayGoals"] = away_goals
-    df.loc[:, "AwaySOT"] = away_sot
     df.loc[:, "AwayShots"] = away_shots
+    df.loc[:, "AwaySOT"] = away_sot
 
     return df
 
@@ -312,4 +304,10 @@ def add_diffs(df):
     df["ORDiff"] = df["HomeOverallR"] - df["AwayOverallR"]
     df["GDDiff"] = df["HomeGD"] - df["AwayGD"]
     df["StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
+    return df
+
+
+# データ加工7: isHome
+def add_is_home_feature(df):
+    df["isHome"] = 1
     return df
