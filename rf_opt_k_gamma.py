@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import logging
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import accuracy_score
 from components.model_evaluation import evaluate_rps
 from components.feature_engineering import (

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 # データの読み込みと準備
-match_data_df = pd.read_csv("./csv/match_data_10yr.csv")
+match_data_df = pd.read_csv("./csv/match_data.csv")
 ratings_df = pd.read_csv("./csv/ratings_data.csv")
 match_data_df["Date"] = pd.to_datetime(
     match_data_df["Date"], format="%d/%m/%Y", dayfirst=True
@@ -168,24 +168,24 @@ def get_past_performance(team_name, specified_date, df, k):
         past_matches["FTAG"],
     ).sum()
     avg_goals = total_goals / k
-
+    
     total_sot = np.where(
-        past_matches["HomeTeam"] == team_name, past_matches["HomeStreak"], past_matches["AwayStreak"]
+        past_matches["HomeTeam"] == team_name, past_matches["HST"], past_matches["AST"]
     ).sum()
     avg_sot = total_sot / k
-
-    total_corners = np.where(
-        past_matches["HomeTeam"] == team_name, past_matches["HC"], past_matches["AC"]
+    
+    total_shots = np.where(
+        past_matches["HomeTeam"] == team_name, past_matches["HS"], past_matches["AS"]
     ).sum()
-    avg_corners = total_corners / k
+    avg_shots = total_shots / k
 
-    return avg_goals, avg_corners, avg_sot
+    return avg_goals, avg_sot, avg_shots
 
 
 ## 各試合にチームパフォーマンスを追加する関数
 def add_team_performance_to_matches(df, k):
-    home_goals, home_sot, home_corners = [], [], []
-    away_goals, away_sot, away_corners = [], [], []
+    home_goals, home_sot, home_shots = [], [], []
+    away_goals, away_sot, away_shots = [], [], []
 
     for idx, row in df.iterrows():
         home_team = row["HomeTeam"]
@@ -196,34 +196,34 @@ def add_team_performance_to_matches(df, k):
         if idx < k * 10:
             home_goals.append(np.nan)
             home_sot.append(np.nan)
-            home_corners.append(np.nan)
+            home_shots.append(np.nan)
             away_goals.append(np.nan)
             away_sot.append(np.nan)
-            away_corners.append(np.nan)
+            away_shots.append(np.nan)
         else:
             home_performance = get_past_performance(home_team, date, df, k)
             home_goals.append(home_performance[0])
             home_sot.append(home_performance[1])
-            home_corners.append(home_performance[2])
+            home_shots.append(home_performance[2])
 
             away_performance = get_past_performance(away_team, date, df, k)
             away_goals.append(away_performance[0])
             away_sot.append(away_performance[1])
-            away_corners.append(away_performance[2])
+            away_shots.append(away_performance[2])
 
     df["HomeGoals"] = pd.Series(dtype="float64")
     df["HomeSOT"] = pd.Series(dtype="float64")
-    df["HomeCorners"] = pd.Series(dtype="float64")
+    df["HomeShots"] = pd.Series(dtype="float64")
     df["AwayGoals"] = pd.Series(dtype="float64")
     df["AwaySOT"] = pd.Series(dtype="float64")
-    df["AwayCorners"] = pd.Series(dtype="float64")
+    df["AwayShots"] = pd.Series(dtype="float64")
 
     df.loc[:, "HomeGoals"] = home_goals
     df.loc[:, "HomeSOT"] = home_sot
-    df.loc[:, "HomeCorners"] = home_corners
+    df.loc[:, "HomeShots"] = home_shots
     df.loc[:, "AwayGoals"] = away_goals
     df.loc[:, "AwaySOT"] = away_sot
-    df.loc[:, "AwayCorners"] = away_corners
+    df.loc[:, "AwayShots"] = away_shots
 
     return df
 
@@ -303,9 +303,9 @@ def add_goal_difference(df):
 def add_diffs(df):
     df["FormDiff"] = df["HomeForm"] - df["AwayForm"]
     df["StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
-    df["SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
     df["GoalsDiff"] = df["HomeGoals"] - df["AwayGoals"]
-    df["CornersDiff"] = df["HomeCorners"] - df["AwayCorners"]
+    df["SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
+    df["shotsDiff"] = df["Homeshots"] - df["Awayshots"]
     df["ARDiff"] = df["HomeAttackR"] - df["AwayAttackR"]
     df["MRDiff"] = df["HomeMidfieldR"] - df["AwayMidfieldR"]
     df["DRDiff"] = df["HomeDefenceR"] - df["AwayDefenceR"]

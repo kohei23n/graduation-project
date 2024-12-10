@@ -3,7 +3,7 @@ import os
 
 # フォルダとアウトプットファイルのパスを指定
 data_folder = "./csv/"
-output_file = "./csv/match_data_10yr.csv"
+output_file = "./csv/match_data.csv"
 
 # 取得する season ファイルのリストを作成（"seasonYYYY-YY.csv"）
 seasons = [f"season{year}-{str(year+1)[-2:]}.csv" for year in range(2014, 2024)]
