@@ -10,7 +10,6 @@ match_data_df["Date"] = pd.to_datetime(
 
 # データ加工1：Form
 
-
 ## Formを 計算・更新する関数
 def update_form(home_team, away_team, result, gamma, team_form, season):
     form_home = team_form[home_team]
@@ -57,7 +56,7 @@ def calculate_form(df, gamma, teams):
 
     df["HomeForm"] = pd.Series(dtype="float64")
     df["AwayForm"] = pd.Series(dtype="float64")
-
+    
     df.loc[:, "HomeForm"] = home_forms
     df.loc[:, "AwayForm"] = away_forms
     return df
@@ -124,7 +123,7 @@ def add_streaks(df, k):
         home_weighted_streaks.append(home_weighted_streak)
         away_streaks.append(away_streak)
         away_weighted_streaks.append(away_weighted_streak)
-
+        
     df["HomeStreak"] = pd.Series(dtype="float64")
     df["HomeStreakWeighted"] = pd.Series(dtype="float64")
     df["AwayStreak"] = pd.Series(dtype="float64")
@@ -160,12 +159,12 @@ def get_past_performance(team_name, specified_date, df, k):
         past_matches["FTAG"],
     ).sum()
     avg_goals = total_goals / k
-
+    
     total_shots = np.where(
         past_matches["HomeTeam"] == team_name, past_matches["HS"], past_matches["AS"]
     ).sum()
     avg_shots = total_shots / k
-
+    
     total_sot = np.where(
         past_matches["HomeTeam"] == team_name, past_matches["HST"], past_matches["AST"]
     ).sum()
@@ -297,7 +296,7 @@ def add_diffs(df):
     df["StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
     df["GoalsDiff"] = df["HomeGoals"] - df["AwayGoals"]
     df["SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
-    df["shotsDiff"] = df["Homeshots"] - df["Awayshots"]
+    df["ShotsDiff"] = df["HomeShots"] - df["AwayShots"]
     df["ARDiff"] = df["HomeAttackR"] - df["AwayAttackR"]
     df["MRDiff"] = df["HomeMidfieldR"] - df["AwayMidfieldR"]
     df["DRDiff"] = df["HomeDefenceR"] - df["AwayDefenceR"]
@@ -305,7 +304,6 @@ def add_diffs(df):
     df["GDDiff"] = df["HomeGD"] - df["AwayGD"]
     df["StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
     return df
-
 
 # データ加工7: isHome
 def add_is_home_feature(df):
