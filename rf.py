@@ -11,53 +11,17 @@ from rf_hyperparameter_tuning import tune_hyperparameters
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
-# データの読み込みと準備
-match_data_df = pd.read_csv("./csv/rf_engineered_data.csv")
+# データの読み込み
+train_data = pd.read_csv("./csv/rf_engineered_data.csv")
 ratings_df = pd.read_csv("./csv/ratings_data.csv")
 
 # 訓練データとテストデータに分割
-train_data = match_data_df[
-    match_data_df["Season"].isin(match_data_df["Season"].unique()[:-2])
+train_data = train_data[
+    train_data["Season"].isin(train_data["Season"].unique()[:-2])
 ].copy()
-test_data = match_data_df[
-    match_data_df["Season"].isin(match_data_df["Season"].unique()[-2:])
+test_data = train_data[
+    train_data["Season"].isin(train_data["Season"].unique()[-2:])
 ].copy()
-
-# データ加工1：Form の計算
-gamma = 0.5  # γ の設定
-teams = set(match_data_df["HomeTeam"]).union(
-    set(match_data_df["AwayTeam"])
-)  # 各チームの一覧
-train_data = calculate_form(train_data, gamma, teams)
-test_data = calculate_form(test_data, gamma, teams)
-
-k = 3  # k の設定
-
-# シーズンごとの最初の k 試合を除外する
-def exclude_first_k_matches(df, k):
-    # 各シーズンごとに試合の順番をカウント
-    df = df.sort_values(by=["Season", "Date"])  # シーズンと日付でソート
-    return df[df.groupby("Season").cumcount() >= k]
-
-# train_data と test_data から最初の k 試合を除外
-train_data = exclude_first_k_matches(train_data, k)
-test_data = exclude_first_k_matches(test_data, k)
-
-# データ加工2： Streak, Weighted Streak の計算
-train_data = add_streaks(train_data, k)
-test_data = add_streaks(test_data, k)
-
-# データ加工3: "Past k..." データの追加
-train_data = add_team_performance_to_matches(train_data, k)
-test_data = add_team_performance_to_matches(test_data, k)
-
-# データ加工6: Diff Data
-train_data = add_diffs(train_data)
-test_data = add_diffs(test_data)
-
-# データ加工7：isHome
-train_data = add_home_factor(train_data)
-test_data = add_home_factor(test_data)
 
 ## これまでのデータを HTML で表示
 train_data.to_html("./htmldata/train_data.html")

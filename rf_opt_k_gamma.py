@@ -88,14 +88,27 @@ logging.info(f"Intermediate data saved to {intermediate_path}")
 
 
 # Time-series cross-validation
-def seasonwise_split(data, n_splits):
-    seasons = sorted(data["Season"].unique())  # シーズンを昇順にソート
+# 各シーズンの最初の k 試合は IsPrediction=False を設定
+def mark_prediction_flag(df, k):
+    df = df.sort_values(by=["Season", "Date"]).copy()
+    df["IsPrediction"] = df.groupby("Season").cumcount() >= k
+    return df
+
+
+# 学習データには過去データすべてを使用つつ、検証データからは最初の k 試合を除外
+def seasonwise_split(data, n_splits, k):
+    seasons = sorted(data["Season"].unique())
     for i in range(n_splits):
-        train_seasons = seasons[: i + 3]  # 訓練データのシーズン（累積）
-        val_season = seasons[i + 3]  # 検証データのシーズン
-        train_idx = data[data["Season"].isin(train_seasons)].index
-        val_idx = data[data["Season"] == val_season].index
-        yield train_idx, val_idx
+        # 学習データの設定（最初の i+3 シーズン）
+        train_data = data[data["Season"].isin(seasons[: i + 3])]
+        
+        # 検証データの設定（次のシーズン、最初の k 試合を除外）
+        val_data = data[data["Season"] == seasons[i + 3]]
+        val_data = mark_prediction_flag(val_data, k)
+        val_data = val_data[val_data["IsPrediction"]]
+
+        # インデックスを返す
+        yield train_data.index, val_data.index
 
 
 # ハイパーパラメータ最適化
@@ -108,7 +121,7 @@ for k in k_values:
 
         # クロスバリデーション
         for fold_idx, (train_idx, val_idx) in enumerate(
-            seasonwise_split(train_data, n_splits)
+            seasonwise_split(train_data, n_splits, k)
         ):
             logging.info(f"Fold {fold_idx + 1}/{n_splits}")
             temp_train_data = train_data.loc[train_idx].copy()
@@ -122,7 +135,7 @@ for k in k_values:
             temp_train_data = add_goal_difference(temp_train_data)
             temp_train_data = add_diffs(temp_train_data)
             temp_train_data = add_home_factor(temp_train_data)
-            
+
             temp_val_data = calculate_form(temp_val_data, gamma, teams)
             temp_val_data = add_streaks(temp_val_data, k)
             temp_val_data = add_team_performance_to_matches(temp_val_data, k)
