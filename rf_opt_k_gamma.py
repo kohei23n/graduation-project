@@ -5,10 +5,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from components.model_evaluation import evaluate_rps
 from components.feature_engineering import (
-    calculate_form,
+    add_form,
     add_streaks,
     add_team_performance_to_matches,
-    merge_ratings,
+    add_ratings,
     add_goal_difference,
     add_diffs,
     add_home_factor,
@@ -80,8 +80,9 @@ best_k, best_gamma, best_rps, best_accuracy = None, None, float("inf"), 0.0
 
 # k と gamma に依存しない特徴量生成
 logging.info("Generating features independent of k and gamma...")
-match_data_df = merge_ratings(match_data_df, ratings_df)
+match_data_df = add_ratings(match_data_df, ratings_df)
 match_data_df = add_goal_difference(match_data_df)
+match_data_df = add_home_factor(match_data_df)
 intermediate_path = "./csv/intermediate_engineered_data.csv"
 match_data_df.to_csv(intermediate_path, index=False)
 logging.info(f"Intermediate data saved to {intermediate_path}")
@@ -128,18 +129,18 @@ for k in k_values:
             temp_val_data = train_data.loc[val_idx].copy()
 
             # 特徴量生成
-            temp_train_data = calculate_form(temp_train_data, gamma, teams)
+            temp_train_data = add_form(temp_train_data, gamma, teams)
             temp_train_data = add_streaks(temp_train_data, k)
             temp_train_data = add_team_performance_to_matches(temp_train_data, k)
-            temp_train_data = merge_ratings(temp_train_data, ratings_df)
+            temp_train_data = add_ratings(temp_train_data, ratings_df)
             temp_train_data = add_goal_difference(temp_train_data)
             temp_train_data = add_diffs(temp_train_data)
             temp_train_data = add_home_factor(temp_train_data)
 
-            temp_val_data = calculate_form(temp_val_data, gamma, teams)
+            temp_val_data = add_form(temp_val_data, gamma, teams)
             temp_val_data = add_streaks(temp_val_data, k)
             temp_val_data = add_team_performance_to_matches(temp_val_data, k)
-            temp_val_data = merge_ratings(temp_val_data, ratings_df)
+            temp_val_data = add_ratings(temp_val_data, ratings_df)
             temp_val_data = add_goal_difference(temp_val_data)
             temp_val_data = add_diffs(temp_val_data)
             temp_val_data = add_home_factor(temp_val_data)
@@ -194,11 +195,10 @@ print(f"Best RPS: {best_rps:.4f}, Best Accuracy: {best_accuracy:.4f}")
 
 # 最終的な特徴量生成
 logging.info("Generating final engineered data with optimized k and gamma...")
-match_data_df = calculate_form(match_data_df, best_gamma, teams)
+match_data_df = add_form(match_data_df, best_gamma, teams)
 match_data_df = add_streaks(match_data_df, best_k)
 match_data_df = add_team_performance_to_matches(match_data_df, best_k)
-match_data_df = merge_ratings(match_data_df, ratings_df)
-match_data_df = add_goal_difference(match_data_df)
+match_data_df = add_diffs(match_data_df)
 
 # 最終データを保存
 final_output_path = "./csv/rf_engineered_data.csv"

@@ -11,7 +11,7 @@ match_data_df["Date"] = pd.to_datetime(
 # データ加工1：Form
 
 ## Formを 計算・更新する関数
-def update_form(home_team, away_team, result, gamma, team_form, season):
+def calculate_new_form(home_team, away_team, result, gamma, team_form, season):
     form_home = team_form[home_team]
     form_away = team_form[away_team]
 
@@ -30,7 +30,7 @@ def update_form(home_team, away_team, result, gamma, team_form, season):
 
 
 ## Form の更新を試合ごとに適用
-def calculate_form(df, gamma, teams):
+def add_form(df, gamma, teams):
     home_forms, away_forms = [], []
     current_season = None
     team_form = {team: 1.0 for team in teams}
@@ -48,7 +48,7 @@ def calculate_form(df, gamma, teams):
         home_forms.append(team_form[home_team])
         away_forms.append(team_form[away_team])
 
-        new_home_form, new_away_form = update_form(
+        new_home_form, new_away_form = calculate_new_form(
             home_team, away_team, result, gamma, team_form, season
         )
         team_form[home_team] = new_home_form
@@ -223,7 +223,7 @@ def add_team_performance_to_matches(df, k):
 
 
 ## Ratingsデータを結合する関数
-def merge_ratings(df, ratings_df):
+def add_ratings(df, ratings_df):
     df = (
         df.merge(
             ratings_df, left_on=["HomeTeam", "Season"], right_on=["Team", "Season"]

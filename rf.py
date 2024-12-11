@@ -1,11 +1,4 @@
 import pandas as pd
-from components.feature_engineering import (
-    calculate_form,
-    add_streaks,
-    add_team_performance_to_matches,
-    add_diffs,
-    add_home_factor,
-)
 from components.model_evaluation import evaluate_rps
 from rf_hyperparameter_tuning import tune_hyperparameters
 from sklearn.ensemble import RandomForestClassifier
@@ -79,12 +72,12 @@ print(f"Best Parameters: {best_params}")
 rf_model = RandomForestClassifier(**best_params, random_state=42, verbose=0)
 rf_model.fit(X_train, y_train)
 
-# テストデータでの予測
+# モデルの予測確率を取得
 y_pred = rf_model.predict(X_test)
 
 # RPSの計算
 y_probs = rf_model.predict_proba(X_test)
-mean_rps = evaluate_rps(y_test.to_numpy(), y_probs)
+mean_rps = evaluate_rps(y_test, y_probs)
 print(f"Mean RPS: {mean_rps:.3f}")
 
 # Accuracyの計算
