@@ -1,2 +1,4 @@
 .venv/
 htmldata/
+csv/rf_engineered_data.csv
+csv/intermediate_engineered_data.csv
