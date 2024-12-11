@@ -1,10 +1,10 @@
 import pandas as pd
-import numpy as np
 from components.feature_engineering import (
     calculate_form,
     add_streaks,
     add_team_performance_to_matches,
     add_diffs,
+    add_home_factor,
 )
 from components.model_evaluation import evaluate_rps
 from rf_hyperparameter_tuning import tune_hyperparameters
@@ -55,6 +55,10 @@ test_data = add_team_performance_to_matches(test_data, k)
 train_data = add_diffs(train_data)
 test_data = add_diffs(test_data)
 
+# データ加工7：isHome
+train_data = add_home_factor(train_data)
+test_data = add_home_factor(test_data)
+
 ## これまでのデータを HTML で表示
 train_data.to_html("./htmldata/train_data.html")
 test_data.to_html("./htmldata/test_data.html")
@@ -94,6 +98,8 @@ features = [
     "ORDiff",
     "GDDiff",
     "StreakWeightedDiff",
+    "HomeIsHome",
+    "AwayIsHome",
 ]
 
 X_train = train_data[features]
@@ -113,7 +119,8 @@ rf_model.fit(X_train, y_train)
 y_pred = rf_model.predict(X_test)
 
 # RPSの計算
-mean_rps = evaluate_rps(rf_model, X_test, y_test)
+y_probs = rf_model.predict_proba(X_test)
+mean_rps = evaluate_rps(y_test.to_numpy(), y_probs)
 print(f"Mean RPS: {mean_rps:.3f}")
 
 # Accuracyの計算

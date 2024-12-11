@@ -1,32 +1,51 @@
 import numpy as np
 from components.model_evaluation import evaluate_rps
+from sklearn.metrics import make_scorer
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 
-# カスタムスコア関数
-def rps_scorer(model, X, y):
-    return -evaluate_rps(model, X, y)  # RPSは小さいほど良いので負符号をつける
+rps_scorer = make_scorer(evaluate_rps, greater_is_better=False, response_method="predict_proba")
 
 # 1. RandomizedSearchCV でパラメータ範囲を絞る
 def run_randomized_search(X_train, y_train):
-    # ハイパーパラメータの広範な範囲
-    n_estimators = [int(x) for x in np.linspace(start=100, stop=500, num=10)]
-    criterion = ["gini", "entropy"]
-    max_depth = [int(x) for x in np.linspace(10, 110, num=11)]
+    # # パラメータ範囲の定義
+    # n_estimators = [int(x) for x in np.linspace(start=500, stop=3000, num=10)] 
+    # criterion = ["gini", "entropy"]
+    # max_depth = [int(x) for x in np.linspace(5, 50, num=10)]
+    # min_samples_split = [2, 5, 10, 15, 20]
+    # min_samples_leaf = [1, 2, 4, 8, 16]
+    # max_features = ["sqrt", "log2", None]
+    
+    # Number of trees in random forest
+    n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
+    # Maximum number of levels in tree
+    max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
+    # Number of features to consider at every split
+    max_features = ['auto', 'sqrt']
+    max_depth.append(None)
+    # Minimum number of samples required to split a node
     min_samples_split = [2, 5, 10]
+    # Minimum number of samples required at each leaf node
     min_samples_leaf = [1, 2, 4]
-    max_features = ["log2", "sqrt"]
+    # Method of selecting samples for training each tree
+    criterion = ["gini", "entropy"]
+    # 
+    bootstrap = [True, False]
 
     random_grid = {
         "n_estimators": n_estimators,
-        "criterion": criterion,
         "max_depth": max_depth,
         "min_samples_split": min_samples_split,
         "min_samples_leaf": min_samples_leaf,
         "max_features": max_features,
+        "criterion": criterion,
+        "bootstrap": bootstrap,
     }
 
+    # ランダムフォレストモデル
     rf_model = RandomForestClassifier(random_state=42)
+
+    # RandomizedSearchCV の設定
     rf_random = RandomizedSearchCV(
         estimator=rf_model,
         param_distributions=random_grid,
@@ -46,9 +65,8 @@ def run_randomized_search(X_train, y_train):
 
     return rf_random.best_params_
 
-# 2. GridSearchCV で細かくチューニング
 def run_grid_search(X_train, y_train, random_params):
-    # RandomizedSearchCV から得た範囲を使ってグリッドを設定
+    # グリッドサーチ用のパラメータ範囲
     param_grid = {
         "n_estimators": [
             max(50, random_params["n_estimators"] - 100),  # 最小50を保証
@@ -57,12 +75,12 @@ def run_grid_search(X_train, y_train, random_params):
         ],
         "criterion": [random_params["criterion"]],
         "max_depth": [
-            max(10, random_params["max_depth"] - 10),  # 最小10を保証
+            max(10, random_params["max_depth"] - 10),
             random_params["max_depth"],
             random_params["max_depth"] + 10,
         ],
         "min_samples_split": [
-            max(2, random_params["min_samples_split"] - 1),  # 最小2を保証
+            max(2, random_params["min_samples_split"] - 1),
             random_params["min_samples_split"],
             random_params["min_samples_split"] + 1,
         ],
@@ -70,8 +88,10 @@ def run_grid_search(X_train, y_train, random_params):
         "max_features": [random_params["max_features"]],
     }
 
+    # ランダムフォレストモデル
     rf_model = RandomForestClassifier(random_state=42)
 
+    # GridSearchCV の設定
     grid_search = GridSearchCV(
         estimator=rf_model,
         param_grid=param_grid,
@@ -91,10 +111,13 @@ def run_grid_search(X_train, y_train, random_params):
 
 # 3. Hyperparameter Tuning の統合関数
 def tune_hyperparameters(X_train, y_train):
-    # RandomizedSearchCV を実行してパラメータ範囲を取得
+    # 1. RandomizedSearchCV を実行してパラメータ範囲を取得
     random_params = run_randomized_search(X_train, y_train)
 
-    # GridSearchCV を実行して最適なパラメータを取得
+    # 2. GridSearchCV を実行して最適なパラメータを取得
     best_model, best_params = run_grid_search(X_train, y_train, random_params)
+
+    print("Final Best Parameters:")
+    print(best_params)
 
     return best_model, best_params

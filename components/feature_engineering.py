@@ -306,7 +306,12 @@ def add_diffs(df):
     df["StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
     return df
 
-# データ加工7: isHome
-def add_is_home_feature(df):
-    df["isHome"] = 1
+# データ加工7: ホーム・アウェイのフラグ追加
+def add_home_factor(df):
+    # ホームチームに対して1
+    df["HomeIsHome"] = 1
+
+    # アウェイチームに対して0
+    df["AwayIsHome"] = 0
+
     return df

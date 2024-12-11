@@ -11,6 +11,7 @@ from components.feature_engineering import (
     merge_ratings,
     add_goal_difference,
     add_diffs,
+    add_home_factor,
 )
 
 # 進捗状況を表示するための設定
@@ -68,6 +69,8 @@ features = [
     "ORDiff",
     "GDDiff",
     "StreakWeightedDiff",
+    "HomeIsHome",
+    "AwayIsHome",
 ]
 
 # k と gamma の最適化の範囲
@@ -118,13 +121,15 @@ for k in k_values:
             temp_train_data = merge_ratings(temp_train_data, ratings_df)
             temp_train_data = add_goal_difference(temp_train_data)
             temp_train_data = add_diffs(temp_train_data)
-
+            temp_train_data = add_home_factor(temp_train_data)
+            
             temp_val_data = calculate_form(temp_val_data, gamma, teams)
             temp_val_data = add_streaks(temp_val_data, k)
             temp_val_data = add_team_performance_to_matches(temp_val_data, k)
             temp_val_data = merge_ratings(temp_val_data, ratings_df)
             temp_val_data = add_goal_difference(temp_val_data)
             temp_val_data = add_diffs(temp_val_data)
+            temp_val_data = add_home_factor(temp_val_data)
 
             # モデル学習
             X_train = temp_train_data[features]
@@ -136,7 +141,11 @@ for k in k_values:
             rf_model.fit(X_train, y_train)
 
             # 評価
-            rps_score = evaluate_rps(rf_model, X_val, y_val)
+            # モデルの予測確率を取得
+            y_probs = rf_model.predict_proba(X_val)
+
+            # RPSを計算する
+            rps_score = evaluate_rps(y_val, y_probs)
             y_pred = rf_model.predict(X_val)
             acc_score = accuracy_score(y_val, y_pred)
 
