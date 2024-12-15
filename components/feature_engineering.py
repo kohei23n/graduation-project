@@ -10,6 +10,7 @@ match_data_df["Date"] = pd.to_datetime(
 
 # データ加工1：Form
 
+
 ## Formを 計算・更新する関数
 def calculate_new_form(home_team, away_team, result, gamma, team_form, season):
     form_home = team_form[home_team]
@@ -56,7 +57,7 @@ def add_form(df, gamma, teams):
 
     df["HomeForm"] = pd.Series(dtype="float64")
     df["AwayForm"] = pd.Series(dtype="float64")
-    
+
     df.loc[:, "HomeForm"] = home_forms
     df.loc[:, "AwayForm"] = away_forms
     return df
@@ -66,7 +67,7 @@ def add_form(df, gamma, teams):
 
 
 ## 試合結果を数値に変換する関数
-def get_result_points(result, team_type):
+def calculate_points(result, team_type):
     if result == "H" and team_type == "home":
         return 3  # ホーム勝利
     elif result == "A" and team_type == "away":
@@ -77,62 +78,83 @@ def get_result_points(result, team_type):
         return 0  # 敗北
 
 
-## 直近k試合のStreakとWeighted Streakを計算する関数
-def calculate_streaks(team_name, current_date, df, k):
-    season = df.loc[df["Date"] == current_date, "Season"].values[0]
-    past_matches = df[
-        ((df["HomeTeam"] == team_name) | (df["AwayTeam"] == team_name))
-        & (df["Date"] < current_date)
-        & (df["Season"] == season)
-    ]
-    past_matches = past_matches.sort_values(by="Date", ascending=False).head(k)
+# シーズン累積ポイントとRecent Points (Weighted含む) 計算
+def add_points(df, k):
+    df = df.copy()
+    team_total_points = {}
 
-    if len(past_matches) < k:
-        return np.nan, np.nan
+    home_recent_points, away_recent_points = [], []
+    home_weighted_recent_points, away_weighted_recent_points = [], []
+    home_total_points, away_total_points = [], []
 
-    results = []
-    for _, game in past_matches.iterrows():
-        if game["HomeTeam"] == team_name:
-            points = get_result_points(game["FTR"], "home")
-        else:
-            points = get_result_points(game["FTR"], "away")
-        results.append(points)
+    for season in df["Season"].unique():
+        season_matches = df[df["Season"] == season]
+        teams = set(season_matches["HomeTeam"]).union(season_matches["AwayTeam"])
 
-    streak = sum(results) / (3 * k)
-    weighted_streak = sum(2 * (i + 1) * results[i] for i in range(k)) / (
-        3 * k * (k + 1)
-    )
+        # 初期化: 各チームの累積ポイント
+        team_total_points = {team: 0 for team in teams}
 
-    return streak, weighted_streak
+        for idx, row in season_matches.iterrows():
+            home_team = row["HomeTeam"]
+            away_team = row["AwayTeam"]
+            date = row["Date"]
 
+            # 直近k試合のポイント取得
+            def recent_points(team, team_type):
+                past_matches = (
+                    season_matches[
+                        (
+                            (season_matches["HomeTeam"] == team)
+                            | (season_matches["AwayTeam"] == team)
+                        )
+                        & (season_matches["Date"] < date)
+                    ]
+                    .sort_values(by="Date", ascending=False)
+                    .head(k)
+                )
 
-## 各試合にStreakとWeighted Streakを追加する関数
-def add_streaks(df, k):
-    home_streaks, home_weighted_streaks = [], []
-    away_streaks, away_weighted_streaks = [], []
+                if len(past_matches) < k:
+                    return np.nan, np.nan
 
-    for _, row in df.iterrows():
-        home_team = row["HomeTeam"]
-        away_team = row["AwayTeam"]
-        date = row["Date"]
+                points = [
+                    calculate_points(
+                        match["FTR"], "home" if match["HomeTeam"] == team else "away"
+                    )
+                    for _, match in past_matches.iterrows()
+                ]
 
-        home_streak, home_weighted_streak = calculate_streaks(home_team, date, df, k)
-        away_streak, away_weighted_streak = calculate_streaks(away_team, date, df, k)
+                recent = sum(points) / (3 * k)
+                weighted_recent = sum((i + 1) * points[i] for i in range(k)) / (
+                    3 * k * (k + 1)
+                )
+                return recent, weighted_recent
 
-        home_streaks.append(home_streak)
-        home_weighted_streaks.append(home_weighted_streak)
-        away_streaks.append(away_streak)
-        away_weighted_streaks.append(away_weighted_streak)
-        
-    df["HomeStreak"] = pd.Series(dtype="float64")
-    df["HomeStreakWeighted"] = pd.Series(dtype="float64")
-    df["AwayStreak"] = pd.Series(dtype="float64")
-    df["AwayStreakWeighted"] = pd.Series(dtype="float64")
+            # 直近ポイント
+            home_recent, home_weighted = recent_points(home_team, "home")
+            away_recent, away_weighted = recent_points(away_team, "away")
 
-    df.loc[:, "HomeStreak"] = home_streaks
-    df.loc[:, "HomeStreakWeighted"] = home_weighted_streaks
-    df.loc[:, "AwayStreak"] = away_streaks
-    df.loc[:, "AwayStreakWeighted"] = away_weighted_streaks
+            home_recent_points.append(home_recent)
+            home_weighted_recent_points.append(home_weighted)
+            away_recent_points.append(away_recent)
+            away_weighted_recent_points.append(away_weighted)
+
+            # 累積ポイント
+            home_points = calculate_points(row["FTR"], "home")
+            away_points = calculate_points(row["FTR"], "away")
+
+            home_total_points.append(team_total_points[home_team])
+            away_total_points.append(team_total_points[away_team])
+
+            team_total_points[home_team] += home_points
+            team_total_points[away_team] += away_points
+
+    # データフレームに追加
+    df["HomeRecentPoints"] = home_recent_points
+    df["AwayRecentPoints"] = away_recent_points
+    df["HomeWeightedRecentPoints"] = home_weighted_recent_points
+    df["AwayWeightedRecentPoints"] = away_weighted_recent_points
+    df["HomeTotalPoints"] = home_total_points
+    df["AwayTotalPoints"] = away_total_points
 
     return df
 
@@ -159,12 +181,12 @@ def get_past_performance(team_name, specified_date, df, k):
         past_matches["FTAG"],
     ).sum()
     avg_goals = total_goals / k
-    
+
     total_shots = np.where(
         past_matches["HomeTeam"] == team_name, past_matches["HS"], past_matches["AS"]
     ).sum()
     avg_shots = total_shots / k
-    
+
     total_sot = np.where(
         past_matches["HomeTeam"] == team_name, past_matches["HST"], past_matches["AST"]
     ).sum()
@@ -293,9 +315,13 @@ def add_goal_difference(df):
 ## Diff Dataを追加する関数
 def add_diffs(df):
     df = df.loc[:, ~df.columns.duplicated()]
-    
+
     df.loc[:, "FormDiff"] = df["HomeForm"] - df["AwayForm"]
-    df.loc[:, "StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
+    df.loc[:, "PointsDiff"] = df["HomeTotalPoints"] - df["AwayTotalPoints"]
+    df.loc[:, "RecentPointsDiff"] = df["HomeRecentPoints"] - df["AwayRecentPoints"]
+    df.loc[:, "WeightedRecentPointsDiff"] = (
+        df["HomeWeightedRecentPoints"] - df["AwayWeightedRecentPoints"]
+    )
     df.loc[:, "GoalsDiff"] = df["HomeGoals"] - df["AwayGoals"]
     df.loc[:, "SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
     df.loc[:, "ShotsDiff"] = df["HomeShots"] - df["AwayShots"]
@@ -304,8 +330,8 @@ def add_diffs(df):
     df.loc[:, "DRDiff"] = df["HomeDefenceR"] - df["AwayDefenceR"]
     df.loc[:, "ORDiff"] = df["HomeOverallR"] - df["AwayOverallR"]
     df.loc[:, "GDDiff"] = df["HomeGD"] - df["AwayGD"]
-    df.loc[:, "StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
     return df
+
 
 # データ加工7: ホーム・アウェイのフラグ追加
 def add_home_factor(df):

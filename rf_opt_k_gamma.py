@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score
 from components.model_evaluation import evaluate_rps
 from components.feature_engineering import (
     add_form,
-    add_streaks,
+    add_points,
     add_team_performance_to_matches,
     add_ratings,
     add_goal_difference,
@@ -54,10 +54,16 @@ features = [
     "AwaySOT",
     "HomeGD",
     "AwayGD",
-    "HomeStreakWeighted",
-    "AwayStreakWeighted",
+    "HomeRecentPoints",
+    "AwayRecentPoints",
+    "HomeWeightedRecentPoints",
+    "AwayWeightedRecentPoints",
+    "HomeTotalPoints",
+    "AwayTotalPoints",
     "FormDiff",
-    "StreakDiff",
+    "PointsDiff",
+    "RecentPointsDiff",
+    "WeightedRecentPointsDiff",
     "GoalsDiff",
     "ShotsDiff",
     "SOTDiff",
@@ -66,7 +72,6 @@ features = [
     "DRDiff",
     "ORDiff",
     "GDDiff",
-    "StreakWeightedDiff",
     "HomeIsHome",
     "AwayIsHome",
 ]
@@ -77,8 +82,6 @@ teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
 match_data_df = add_ratings(match_data_df, ratings_df)
 match_data_df = add_goal_difference(match_data_df)
 match_data_df = add_home_factor(match_data_df)
-required_columns = features + ["Season", "FTR"]
-match_data_df = match_data_df[required_columns]
 
 
 # k と gamma の最適化の範囲
@@ -132,7 +135,7 @@ for k in k_values:
 
             # 特徴量生成
             temp_train_data = add_form(temp_train_data, gamma, teams)
-            temp_train_data = add_streaks(temp_train_data, k)
+            temp_train_data = add_points(temp_train_data, k)
             temp_train_data = add_team_performance_to_matches(temp_train_data, k)
             temp_train_data = add_ratings(temp_train_data, ratings_df)
             temp_train_data = add_goal_difference(temp_train_data)
@@ -140,7 +143,7 @@ for k in k_values:
             temp_train_data = add_home_factor(temp_train_data)
 
             temp_val_data = add_form(temp_val_data, gamma, teams)
-            temp_val_data = add_streaks(temp_val_data, k)
+            temp_val_data = add_points(temp_val_data, k)
             temp_val_data = add_team_performance_to_matches(temp_val_data, k)
             temp_val_data = add_ratings(temp_val_data, ratings_df)
             temp_val_data = add_goal_difference(temp_val_data)
@@ -199,15 +202,19 @@ print(f"Best RPS: {best_rps:.4f}, Best Accuracy: {best_accuracy:.4f}")
 logging.info("Generating final engineered data with optimized k and gamma...")
 
 train_data = add_form(train_data, best_gamma, teams)
-train_data = add_streaks(train_data, best_k)
+train_data = add_points(train_data, best_k)
 train_data = add_team_performance_to_matches(train_data, best_k)
-train_data = add_diffs(train_data, ratings_df)
+train_data = add_diffs(train_data)
 
 test_data = add_form(test_data, best_gamma, teams)
-test_data = add_streaks(test_data, best_k)
+test_data = add_points(test_data, best_k)
 test_data = add_team_performance_to_matches(test_data, best_k)
-test_data = add_diffs(test_data, ratings_df)
+test_data = add_diffs(test_data)
 
+# 不要なカラムを削除
+required_columns = features + ["Season", "FTR"]
+train_data = train_data[required_columns]
+test_data = test_data[required_columns]
 
 # 最終データを保存
 train_output_path = "./csv/rf_train_data.csv"
