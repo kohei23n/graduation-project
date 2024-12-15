@@ -25,15 +25,13 @@ match_data_df["Date"] = pd.to_datetime(
     match_data_df["Date"], format="%d/%m/%Y", dayfirst=True
 )
 
-# 訓練データとテストデータに分割
+# k と gamma をチューニングするときは訓練データのみで行うため、テストデータは除外
 train_data = match_data_df[
     match_data_df["Season"].isin(match_data_df["Season"].unique()[:-2])
-]
+].copy()
 test_data = match_data_df[
     match_data_df["Season"].isin(match_data_df["Season"].unique()[-2:])
-]
-
-teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
+].copy()
 
 features = [
     "HomeForm",
@@ -73,22 +71,26 @@ features = [
     "AwayIsHome",
 ]
 
+teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
+
+# 必要な特徴量を追加し、カラムも絞る
+match_data_df = add_ratings(match_data_df, ratings_df)
+match_data_df = add_goal_difference(match_data_df)
+match_data_df = add_home_factor(match_data_df)
+required_columns = features + ["Season", "FTR"]
+match_data_df = match_data_df[required_columns]
+
+
 # k と gamma の最適化の範囲
 k_values = range(3, 8)
 gamma_values = [0.1 * i for i in range(1, 6)]
 best_k, best_gamma, best_rps, best_accuracy = None, None, float("inf"), 0.0
 
-# k と gamma に依存しない特徴量生成
-logging.info("Generating features independent of k and gamma...")
-match_data_df = add_ratings(match_data_df, ratings_df)
-match_data_df = add_goal_difference(match_data_df)
-match_data_df = add_home_factor(match_data_df)
-intermediate_path = "./csv/intermediate_engineered_data.csv"
-match_data_df.to_csv(intermediate_path, index=False)
-logging.info(f"Intermediate data saved to {intermediate_path}")
-
 
 # Time-series cross-validation
+logging.info("Generating features independent of k and gamma...")
+
+
 # 各シーズンの最初の k 試合は IsPrediction=False を設定
 def mark_prediction_flag(df, k):
     df = df.sort_values(by=["Season", "Date"]).copy()
@@ -102,7 +104,7 @@ def seasonwise_split(data, n_splits, k):
     for i in range(n_splits):
         # 学習データの設定（最初の i+3 シーズン）
         train_data = data[data["Season"].isin(seasons[: i + 3])]
-        
+
         # 検証データの設定（次のシーズン、最初の k 試合を除外）
         val_data = data[data["Season"] == seasons[i + 3]]
         val_data = mark_prediction_flag(val_data, k)
@@ -195,12 +197,24 @@ print(f"Best RPS: {best_rps:.4f}, Best Accuracy: {best_accuracy:.4f}")
 
 # 最終的な特徴量生成
 logging.info("Generating final engineered data with optimized k and gamma...")
-match_data_df = add_form(match_data_df, best_gamma, teams)
-match_data_df = add_streaks(match_data_df, best_k)
-match_data_df = add_team_performance_to_matches(match_data_df, best_k)
-match_data_df = add_diffs(match_data_df)
+
+train_data = add_form(train_data, best_gamma, teams)
+train_data = add_streaks(train_data, best_k)
+train_data = add_team_performance_to_matches(train_data, best_k)
+train_data = add_diffs(train_data, ratings_df)
+
+test_data = add_form(test_data, best_gamma, teams)
+test_data = add_streaks(test_data, best_k)
+test_data = add_team_performance_to_matches(test_data, best_k)
+test_data = add_diffs(test_data, ratings_df)
+
 
 # 最終データを保存
-final_output_path = "./csv/rf_engineered_data.csv"
-match_data_df.to_csv(final_output_path, index=False)
-logging.info(f"Final engineered data saved to {final_output_path}")
+train_output_path = "./csv/rf_train_data.csv"
+test_output_path = "./csv/rf_test_data.csv"
+
+train_data.to_csv(train_output_path, index=False)
+test_data.to_csv(test_output_path, index=False)
+
+logging.info(f"Train data saved to {train_output_path}")
+logging.info(f"Test data saved to {test_output_path}")

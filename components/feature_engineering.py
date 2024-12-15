@@ -293,17 +293,18 @@ def add_goal_difference(df):
 ## Diff Dataを追加する関数
 def add_diffs(df):
     df = df.loc[:, ~df.columns.duplicated()]
-    df["FormDiff"] = df["HomeForm"] - df["AwayForm"]
-    df["StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
-    df["GoalsDiff"] = df["HomeGoals"] - df["AwayGoals"]
-    df["SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
-    df["ShotsDiff"] = df["HomeShots"] - df["AwayShots"]
-    df["ARDiff"] = df["HomeAttackR"] - df["AwayAttackR"]
-    df["MRDiff"] = df["HomeMidfieldR"] - df["AwayMidfieldR"]
-    df["DRDiff"] = df["HomeDefenceR"] - df["AwayDefenceR"]
-    df["ORDiff"] = df["HomeOverallR"] - df["AwayOverallR"]
-    df["GDDiff"] = df["HomeGD"] - df["AwayGD"]
-    df["StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
+    
+    df.loc[:, "FormDiff"] = df["HomeForm"] - df["AwayForm"]
+    df.loc[:, "StreakDiff"] = df["HomeStreak"] - df["AwayStreak"]
+    df.loc[:, "GoalsDiff"] = df["HomeGoals"] - df["AwayGoals"]
+    df.loc[:, "SOTDiff"] = df["HomeSOT"] - df["AwaySOT"]
+    df.loc[:, "ShotsDiff"] = df["HomeShots"] - df["AwayShots"]
+    df.loc[:, "ARDiff"] = df["HomeAttackR"] - df["AwayAttackR"]
+    df.loc[:, "MRDiff"] = df["HomeMidfieldR"] - df["AwayMidfieldR"]
+    df.loc[:, "DRDiff"] = df["HomeDefenceR"] - df["AwayDefenceR"]
+    df.loc[:, "ORDiff"] = df["HomeOverallR"] - df["AwayOverallR"]
+    df.loc[:, "GDDiff"] = df["HomeGD"] - df["AwayGD"]
+    df.loc[:, "StreakWeightedDiff"] = df["HomeStreakWeighted"] - df["AwayStreakWeighted"]
     return df
 
 # データ加工7: ホーム・アウェイのフラグ追加

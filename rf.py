@@ -5,16 +5,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
 # データの読み込み
-train_data = pd.read_csv("./csv/rf_engineered_data.csv")
-ratings_df = pd.read_csv("./csv/ratings_data.csv")
-
-# 訓練データとテストデータに分割
-train_data = train_data[
-    train_data["Season"].isin(train_data["Season"].unique()[:-2])
-].copy()
-test_data = train_data[
-    train_data["Season"].isin(train_data["Season"].unique()[-2:])
-].copy()
+train_data = pd.read_csv("./csv/rf_train_data.csv")
+test_data = pd.read_csv("./csv/rf_test_data.csv")
 
 ## これまでのデータを HTML で表示
 train_data.to_html("./htmldata/train_data.html")

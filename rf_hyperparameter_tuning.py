@@ -8,29 +8,15 @@ rps_scorer = make_scorer(evaluate_rps, greater_is_better=False, response_method=
 
 # 1. RandomizedSearchCV でパラメータ範囲を絞る
 def run_randomized_search(X_train, y_train):
-    # # パラメータ範囲の定義
-    # n_estimators = [int(x) for x in np.linspace(start=500, stop=3000, num=10)] 
-    # criterion = ["gini", "entropy"]
-    # max_depth = [int(x) for x in np.linspace(5, 50, num=10)]
-    # min_samples_split = [2, 5, 10, 15, 20]
-    # min_samples_leaf = [1, 2, 4, 8, 16]
-    # max_features = ["sqrt", "log2", None]
     
-    # Number of trees in random forest
-    n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)]
-    # Maximum number of levels in tree
-    max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
-    # Number of features to consider at every split
-    max_features = ['auto', 'sqrt']
-    max_depth.append(None)
-    # Minimum number of samples required to split a node
-    min_samples_split = [2, 5, 10]
-    # Minimum number of samples required at each leaf node
-    min_samples_leaf = [1, 2, 4]
-    # Method of selecting samples for training each tree
-    criterion = ["gini", "entropy"]
-    # 
-    bootstrap = [True, False]
+    n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)] # 決定木の数
+    max_depth = [int(x) for x in np.linspace(10, 110, num = 11)] # 木の深さ
+    max_depth.append(None) # 木の深さの最大値
+    max_features = ['log2', 'sqrt'] # 分岐の際に考慮する特徴量の数
+    min_samples_split = [2, 5, 10] # 分岐を許すためのサンプル数
+    min_samples_leaf = [1, 2, 4] # 葉ノードを許すためのサンプル数
+    criterion = ["gini", "entropy"] # 分岐の品質を評価する指標
+    bootstrap = [True, False] # ブートストラップサンプリングを行うかどうか
 
     random_grid = {
         "n_estimators": n_estimators,
