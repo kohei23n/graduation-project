@@ -47,61 +47,53 @@ def add_ratings(df, ratings_df):
 
 
 # -------------------------
-# Form
+# Elo Rating
 # -------------------------
 
+def add_elo_rating(df, initial_rating, k, c=10, d=400):
+    df["HomeElo"] = 0
+    df["AwayElo"] = 0
 
-## Formを 計算・更新する関数
-def calculate_new_form(home_team, away_team, result, gamma, team_form, season):
-    form_home = team_form[home_team]
-    form_away = team_form[away_team]
+    ## シーズンごとにループ
+    for season in df["Season"].unique():
+        # シーズンごとのデータを取得
+        season_data = df[df["Season"] == season]
 
-    if result == "H":
-        new_form_home = form_home + gamma * form_away
-        new_form_away = form_away - gamma * form_away
-    elif result == "A":
-        new_form_home = form_home - gamma * form_home
-        new_form_away = form_away + gamma * form_home
-    else:
-        form_diff = form_home - form_away
-        new_form_home = form_home - gamma * form_diff
-        new_form_away = form_away + gamma * form_diff
+        # シーズン内のチームとその初期レーティングを設定
+        teams = set(season_data["HomeTeam"]).union(season_data["AwayTeam"])
+        team_elo = {team: initial_rating for team in teams}
 
-    return new_form_home, new_form_away
+        # 試合ごとにEloを計算
+        for idx, row in season_data.iterrows():
+            home_team = row["HomeTeam"]
+            away_team = row["AwayTeam"]
+            result = row["FTR"]  # 試合結果 ('H', 'D', 'A')
 
+            # 現在のEloを保存
+            df.at[idx, "HomeElo"] = team_elo[home_team]
+            df.at[idx, "AwayElo"] = team_elo[away_team]
 
-## Form の更新を試合ごとに適用
-def add_form(df, gamma, teams):
-    home_forms, away_forms = [], []
-    current_season = None
-    team_form = {team: 1.0 for team in teams}
+            # 試合結果を数値に変換
+            if result == "H":
+                result_home = 1
+            elif result == "D":
+                result_home = 0.5
+            else:
+                result_home = 0
 
-    for _, row in df.iterrows():
-        home_team = row["HomeTeam"]
-        away_team = row["AwayTeam"]
-        result = row["FTR"]
-        season = row["Season"]
+            # 勝率 (期待値) の計算
+            expected_home = 1 / (1 + c ** ((team_elo[away_team] - team_elo[home_team]) / d))
+            expected_away = 1 - expected_home
 
-        if season != current_season:
-            current_season = season
-            team_form = {team: 1.0 for team in teams}
+            # Eloレーティングを更新
+            new_home_elo = team_elo[home_team] + k * (result_home - expected_home)
+            new_away_elo = team_elo[away_team] + k * ((1 - result_home) - expected_away)
 
-        home_forms.append(team_form[home_team])
-        away_forms.append(team_form[away_team])
+            # 更新後のEloを反映
+            team_elo[home_team] = new_home_elo
+            team_elo[away_team] = new_away_elo
 
-        new_home_form, new_away_form = calculate_new_form(
-            home_team, away_team, result, gamma, team_form, season
-        )
-        team_form[home_team] = new_home_form
-        team_form[away_team] = new_away_form
-
-    df["HomeForm"] = pd.Series(dtype="float64")
-    df["AwayForm"] = pd.Series(dtype="float64")
-
-    df.loc[:, "HomeForm"] = home_forms
-    df.loc[:, "AwayForm"] = away_forms
     return df
-
 
 # -------------------------
 # 直近 k 試合のゴール数、シュート数、枠内シュート数、得失点差、勝ち点を総合、ホーム、アウェイごとに計算
