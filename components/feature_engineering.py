@@ -470,32 +470,33 @@ def add_team_stats(df, k):
 def add_diffs(df):
     df = df.loc[:, ~df.columns.duplicated()]
 
-    # 基本的な差分
+    # Form の差分
     df["FormDiff"] = df["HomeForm"] - df["AwayForm"]
+    
+    # Points の差分
     df["PointsDiff"] = df["HT_TotalPoints"] - df["AT_TotalPoints"]
     df["RecentPointsDiff"] = df["HT_RecentPoints"] - df["AT_RecentPoints"]
-    df["HomeRecentPointsDiff"] = df["HT_HomeRecentPoints"] - df["AT_AwayRecentPoints"]
-    df["AwayRecentPointsDiff"] = df["HT_AwayRecentPoints"] - df["AT_HomeRecentPoints"]
+    df["HomeAwayPointsDiff"] = df["HT_HomeRecentPoints"] - df["AT_AwayRecentPoints"]
 
     # ゴール数の差分
-    df["GoalsDiff"] = df["HT_RecentGoals"] - df["AT_RecentGoals"]
-    df["HomeGoalsDiff"] = df["HT_HomeRecentGoals"] - df["AT_AwayRecentGoals"]
-    df["AwayGoalsDiff"] = df["HT_AwayRecentGoals"] - df["AT_HomeRecentGoals"]
-
-    # シュート数の差分
-    df["ShotsDiff"] = df["HT_RecentShots"] - df["AT_RecentShots"]
-    df["HomeShotsDiff"] = df["HT_HomeRecentShots"] - df["AT_AwayRecentShots"]
-    df["AwayShotsDiff"] = df["HT_AwayRecentShots"] - df["AT_HomeRecentShots"]
-
-    # 枠内シュート数の差分
-    df["SOTDiff"] = df["HT_RecentSOT"] - df["AT_RecentSOT"]
-    df["HomeSOTDiff"] = df["HT_HomeRecentSOT"] - df["AT_AwayRecentSOT"]
-    df["AwaySOTDiff"] = df["HT_AwayRecentSOT"] - df["AT_HomeRecentSOT"]
+    df["GoalsDiff"] = df["HT_TotalGoals"] - df["AT_TotalGoals"]
+    df["RecentGoalsDiff"] = df["HT_RecentGoals"] - df["AT_RecentGoals"]
+    df["HomeAwayGoalsDiff"] = df["HT_HomeRecentGoals"] - df["AT_AwayRecentGoals"]
 
     # 得失点差（GD）の差分
-    df["GDDiff"] = df["HT_RecentGD"] - df["AT_RecentGD"]
-    df["HomeGDDiff"] = df["HT_HomeRecentGD"] - df["AT_AwayRecentGD"]
-    df["AwayGDDiff"] = df["HT_AwayRecentGD"] - df["AT_HomeRecentGD"]
+    df["GDDiff"] = df["HT_TotalGD"] - df["AT_TotalGD"]
+    df["RecentGDDiff"] = df["HT_RecentGD"] - df["AT_RecentGD"]
+    df["HomeAwayGDDiff"] = df["HT_HomeRecentGD"] - df["AT_AwayRecentGD"]
+    
+    # シュート数の差分
+    df["ShotsDiff"] = df["HT_TotalShots"] - df["AT_TotalShots"]
+    df["RecentShotsDiff"] = df["HT_RecentShots"] - df["AT_RecentShots"]
+    df["HomeAwayShotsDiff"] = df["HT_HomeRecentShots"] - df["AT_AwayRecentShots"]
+
+    # 枠内シュート数の差分
+    df["SOTDiff"] = df["HT_TotalSOT"] - df["AT_TotalSOT"]
+    df["RecentSOTDiff"] = df["HT_RecentSOT"] - df["AT_RecentSOT"]
+    df["HomeAwaySOTDiff"] = df["HT_HomeRecentSOT"] - df["AT_AwayRecentSOT"]
 
     # Ratingsの差分
     df["ARDiff"] = df["HomeAttackR"] - df["AwayAttackR"]
