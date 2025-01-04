@@ -50,10 +50,12 @@ def add_ratings(df, ratings_df):
 # Elo Rating
 # -------------------------
 
-def add_elo_rating(df, initial_rating, k, c=10, d=400):
-    df["HomeElo"] = 0
-    df["AwayElo"] = 0
 
+def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
+    
+    df["HomeElo"] = 0.0
+    df["AwayElo"] = 0.0
+    
     ## シーズンごとにループ
     for season in df["Season"].unique():
         # シーズンごとのデータを取得
@@ -62,18 +64,18 @@ def add_elo_rating(df, initial_rating, k, c=10, d=400):
         # シーズン内のチームとその初期レーティングを設定
         teams = set(season_data["HomeTeam"]).union(season_data["AwayTeam"])
         team_elo = {team: initial_rating for team in teams}
+        
+        home_elo_ratings, away_elo_ratings = [], []
 
         # 試合ごとにEloを計算
         for idx, row in season_data.iterrows():
             home_team = row["HomeTeam"]
             away_team = row["AwayTeam"]
-            result = row["FTR"]  # 試合結果 ('H', 'D', 'A')
+            result = row["FTR"]
 
-            # 現在のEloを保存
-            df.at[idx, "HomeElo"] = team_elo[home_team]
-            df.at[idx, "AwayElo"] = team_elo[away_team]
+            home_elo_ratings.append(float(team_elo[home_team]))
+            away_elo_ratings.append(float(team_elo[away_team]))
 
-            # 試合結果を数値に変換
             if result == "H":
                 result_home = 1
             elif result == "D":
@@ -81,19 +83,20 @@ def add_elo_rating(df, initial_rating, k, c=10, d=400):
             else:
                 result_home = 0
 
-            # 勝率 (期待値) の計算
             expected_home = 1 / (1 + c ** ((team_elo[away_team] - team_elo[home_team]) / d))
             expected_away = 1 - expected_home
 
-            # Eloレーティングを更新
             new_home_elo = team_elo[home_team] + k * (result_home - expected_home)
             new_away_elo = team_elo[away_team] + k * ((1 - result_home) - expected_away)
 
-            # 更新後のEloを反映
             team_elo[home_team] = new_home_elo
             team_elo[away_team] = new_away_elo
 
+        df.loc[season_data.index, "HomeElo"] = home_elo_ratings
+        df.loc[season_data.index, "AwayElo"] = away_elo_ratings
+
     return df
+
 
 # -------------------------
 # 直近 k 試合のゴール数、シュート数、枠内シュート数、得失点差、勝ち点を総合、ホーム、アウェイごとに計算
@@ -317,7 +320,7 @@ def add_goals_stats(df, k):
             team_stats["HT_TotalGD"].append(team_total_gd[home_team])
             team_total_goals[home_team] += row["FTHG"]
             team_total_gd[home_team] += row["FTHG"] - row["FTAG"]
-            
+
             ## アウェイチームの累積ゴール数と累積得失点差を計算
             team_stats["AT_TotalGoals"].append(team_total_goals[away_team])
             team_stats["AT_TotalGD"].append(team_total_gd[away_team])
@@ -359,22 +362,22 @@ def recent_shots_stats(team, date, df, k, is_home=None):
 # シュート数と枠内シュート数に関する統計を計算
 def add_shots_stats(df, k):
     team_stats = {
-        "HT_RecentShots": [], # ホームチームの直近 k 試合の平均シュート数
-        "HT_HomeRecentShots": [], # ホームチームの直近 k 試合の平均シュート数（ホーム試合のみ）
-        "HT_AwayRecentShots": [], # ホームチームの直近 k 試合の平均シュート数（アウェイ試合のみ）
-        "HT_RecentSOT": [], # ホームチームの直近 k 試合の平均枠内シュート数
-        "HT_HomeRecentSOT": [], # ホームチームの直近 k 試合の平均枠内シュート数（ホーム試合のみ）
-        "HT_AwayRecentSOT": [], # ホームチームの直近 k 試合の平均枠内シュート数（アウェイ試合のみ）
-        "HT_TotalShots": [], # ホームチームの累積シュート数
-        "HT_TotalSOT": [], # ホームチームの累積枠内シュート数 
-        "AT_RecentShots": [], # アウェイチームの直近 k 試合の平均シュート数
-        "AT_HomeRecentShots": [], # アウェイチームの直近 k 試合の平均シュート数（ホーム試合のみ）
-        "AT_AwayRecentShots": [], # アウェイチームの直近 k 試合の平均シュート数（アウェイ試合のみ）
-        "AT_RecentSOT": [], # アウェイチームの直近 k 試合の平均枠内シュート数
-        "AT_HomeRecentSOT": [], # アウェイチームの直近 k 試合の平均枠内シュート数（ホーム試合のみ）
-        "AT_AwayRecentSOT": [], # アウェイチームの直近 k 試合の平均枠内シュート数（アウェイ試合のみ）
-        "AT_TotalShots": [], # アウェイチームの累積シュート数
-        "AT_TotalSOT": [], # アウェイチームの累積枠内シュート数
+        "HT_RecentShots": [],  # ホームチームの直近 k 試合の平均シュート数
+        "HT_HomeRecentShots": [],  # ホームチームの直近 k 試合の平均シュート数（ホーム試合のみ）
+        "HT_AwayRecentShots": [],  # ホームチームの直近 k 試合の平均シュート数（アウェイ試合のみ）
+        "HT_RecentSOT": [],  # ホームチームの直近 k 試合の平均枠内シュート数
+        "HT_HomeRecentSOT": [],  # ホームチームの直近 k 試合の平均枠内シュート数（ホーム試合のみ）
+        "HT_AwayRecentSOT": [],  # ホームチームの直近 k 試合の平均枠内シュート数（アウェイ試合のみ）
+        "HT_TotalShots": [],  # ホームチームの累積シュート数
+        "HT_TotalSOT": [],  # ホームチームの累積枠内シュート数
+        "AT_RecentShots": [],  # アウェイチームの直近 k 試合の平均シュート数
+        "AT_HomeRecentShots": [],  # アウェイチームの直近 k 試合の平均シュート数（ホーム試合のみ）
+        "AT_AwayRecentShots": [],  # アウェイチームの直近 k 試合の平均シュート数（アウェイ試合のみ）
+        "AT_RecentSOT": [],  # アウェイチームの直近 k 試合の平均枠内シュート数
+        "AT_HomeRecentSOT": [],  # アウェイチームの直近 k 試合の平均枠内シュート数（ホーム試合のみ）
+        "AT_AwayRecentSOT": [],  # アウェイチームの直近 k 試合の平均枠内シュート数（アウェイ試合のみ）
+        "AT_TotalShots": [],  # アウェイチームの累積シュート数
+        "AT_TotalSOT": [],  # アウェイチームの累積枠内シュート数
     }
 
     team_total_shots = {}  # 累積シュート数
@@ -431,7 +434,7 @@ def add_shots_stats(df, k):
             team_stats["HT_TotalSOT"].append(team_total_sot[home_team])
             team_total_shots[home_team] += row["HS"]
             team_total_sot[home_team] += row["HST"]
-            
+
             ## アウェイチームの累積データを計算
             team_stats["AT_TotalShots"].append(team_total_shots[away_team])
             team_stats["AT_TotalSOT"].append(team_total_sot[away_team])
@@ -462,9 +465,9 @@ def add_team_stats(df, k):
 def add_diffs(df):
     df = df.loc[:, ~df.columns.duplicated()]
 
-    # Form の差分
-    df["FormDiff"] = df["HomeForm"] - df["AwayForm"]
-    
+    # Elo の差分
+    df["EloDiff"] = df["HomeElo"] - df["AwayElo"]
+
     # Points の差分
     df["PointsDiff"] = df["HT_TotalPoints"] - df["AT_TotalPoints"]
     df["RecentPointsDiff"] = df["HT_RecentPoints"] - df["AT_RecentPoints"]
@@ -479,7 +482,7 @@ def add_diffs(df):
     df["GDDiff"] = df["HT_TotalGD"] - df["AT_TotalGD"]
     df["RecentGDDiff"] = df["HT_RecentGD"] - df["AT_RecentGD"]
     df["HomeAwayGDDiff"] = df["HT_HomeRecentGD"] - df["AT_AwayRecentGD"]
-    
+
     # シュート数の差分
     df["ShotsDiff"] = df["HT_TotalShots"] - df["AT_TotalShots"]
     df["RecentShotsDiff"] = df["HT_RecentShots"] - df["AT_RecentShots"]

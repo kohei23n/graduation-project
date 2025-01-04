@@ -14,9 +14,9 @@ test_data.to_html("./htmldata/test_data.html")
 
 ### モデルの学習と評価
 features = [
-    # Form
-    "HomeForm",
-    "AwayForm",
+    # Elo
+    "HomeElo",
+    "AwayElo",
     # Points
     "HT_RecentPoints",
     "HT_HomeRecentPoints",
@@ -70,7 +70,7 @@ features = [
     "AwayDefenceR",
     "AwayOverallR",
     # Differences
-    "FormDiff",
+    "EloDiff",
     "PointsDiff",
     "RecentPointsDiff",
     "HomeAwayPointsDiff",

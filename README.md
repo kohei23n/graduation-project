@@ -11,7 +11,7 @@
 
 ### ランダムフォレスト
 
-- `rf_opt_k_gamma.py`：`feature_engineering.py` を基に特徴量エンジニアリングを実行しながら k と gamma を最適化し、最終的な特徴量を生成
-- `rf.py`：`rf_opt_k_gamma.py` で生成した特長量を基にハイパーパラメータチューニングし、その後モデルを訓練・テスト
+- `rf_opt_k.py`：`feature_engineering.py` を基に特徴量エンジニアリングを実行しながら k を最適化し、最終的な特徴量を生成
+- `rf.py`：`rf_opt_k.py` で生成した特長量を基にハイパーパラメータチューニングし、その後モデルを訓練・テスト
   - ハイパーパラメータチューニングに使うのは `rf_hyperparameter_tuning.py`
   - 評価に使うのは `model_evaluation.py` で定義した RPS
