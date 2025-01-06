@@ -6,14 +6,14 @@ from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 def run_randomized_search(X_train, y_train):
 
     random_grid = {
-        "learning_rate": [0.01, 0.02, 0.05, 0.1, 0.2, 0.3],
-        "min_child_weight": [2, 3, 4, 5, 6, 7, 8],
-        "max_depth": [1, 2, 3, 4],
-        "colsample_bytree": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-        "subsample": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-        "reg_alpha": [0.001, 0.003, 0.01, 0.03, 0.1],
-        "reg_lambda": [0.001, 0.003, 0.01, 0.03, 0.1],
-        "gamma": [0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1],
+        "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3],
+        "max_depth": [2, 4, 6, 8],
+        "min_child_weight": [2, 4, 6, 8],
+        "gamma": [0, 0.01, 0.05, 0.01, 0.05, 0.1],
+        "subsample": [0.5, 0.6, 0.7, 0.8, 0.9],
+        "colsample_bytree": [0.5, 0.6, 0.7, 0.8, 0.9],
+        "reg_alpha": [0, 0.001, 0.005, 0.01, 0.05, 0.1],
+        "reg_lambda": [0, 0.001, 0.005, 0.01, 0.05, 0.1],
     }
 
     # 最適なパラメータで Gradient Boosting モデルを構築
@@ -58,10 +58,25 @@ def run_grid_search(X_train, y_train, random_params):
             random_params["min_child_weight"],
             random_params["min_child_weight"] + 1,
         ],
+        "gamma": [
+            max(0, random_params["gamma"] - 0.01),
+            random_params["gamma"],
+            random_params["gamma"] + 0.01,
+        ],
+        "subsample": [
+            max(0.1, random_params["subsample"] - 0.1),
+            random_params["subsample"],
+            min(1.0, random_params["subsample"] + 0.1),
+        ],
         "colsample_bytree": [
             max(0.1, random_params["colsample_bytree"] - 0.1),
             random_params["colsample_bytree"],
             min(1.0, random_params["colsample_bytree"] + 0.1),
+        ],
+        "reg_alpha": [
+            max(0, random_params["reg_alpha"] - 0.001),
+            random_params["reg_alpha"],
+            random_params["reg_alpha"] + 0.001,
         ],
     }
 

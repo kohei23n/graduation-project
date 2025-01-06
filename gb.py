@@ -139,6 +139,6 @@ feature_importance_df = feature_importance_df.sort_values(
 )
 print(feature_importance_df)
 
-## Results after hyperparameter tuning:
+# Results after hyperparameter tuning:
 # Mean RPS: 0.193
 # Accuracy: 0.570
