@@ -3,6 +3,8 @@ import numpy as np
 import logging
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import KFold
+from components.remove_k_weeks import mark_prediction_flag
 from components.model_evaluation import evaluate_rps
 from components.feature_engineering import (
     add_ratings,
@@ -38,7 +40,8 @@ features = [
     "HT_RecentPoints",
     "HT_HomeRecentPoints",
     "HT_AwayRecentPoints",
-    "HT_TotalPoints" "AT_RecentPoints",
+    "HT_TotalPoints",
+    "AT_RecentPoints",
     "AT_HomeRecentPoints",
     "AT_AwayRecentPoints",
     "AT_TotalPoints",
@@ -106,6 +109,10 @@ features = [
     "MRDiff",
     "DRDiff",
     "ORDiff",
+    # Betting Odds
+    "B365H",
+    "B365D",
+    "B365A",
 ]
 
 teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
@@ -116,60 +123,41 @@ match_data_df = add_ratings(match_data_df, ratings_df)
 
 # k の最適化の範囲
 k_values = range(3, 8)
-best_k, best_rps, best_accuracy = None, float("inf"), 0.0
+best_k, best_accuracy = None, 0.0
 
 
-# Time-series cross-validation
-logging.info("Generating features independent of k...")
+# K-Fold Cross-Validation
+logging.info("Starting hyperparameter tuning with K-Fold Cross-Validation...")
 
 
-# 各シーズンの最初の k 試合は IsPrediction=False を設定
-def mark_prediction_flag(df, k):
-    df = df.sort_values(by=["Season", "Date"]).copy()
-    df["IsPrediction"] = df.groupby("Season").cumcount() >= k
-    return df
-
-
-# 学習データには過去データすべてを使用つつ、検証データからは最初の k 試合を除外
-def seasonwise_split(data, n_splits, k):
-    seasons = sorted(data["Season"].unique())
-    for i in range(n_splits):
-        # 学習データの設定（最初の i+3 シーズン）
-        train_data = data[data["Season"].isin(seasons[: i + 3])]
-
-        # 検証データの設定（次のシーズン、最初の k 試合を除外）
-        val_data = data[data["Season"] == seasons[i + 3]]
-        val_data = mark_prediction_flag(val_data, k)
-        val_data = val_data[val_data["IsPrediction"]]
-
-        # インデックスを返す
-        yield train_data.index, val_data.index
-
-
-# ハイパーパラメータ最適化
-logging.info("Starting hyperparameter tuning...")
+# kの最適化
 n_splits = 5
+kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+
 for k in k_values:
     logging.info(f"Testing k={k}")
     rps_scores, accuracy_scores = [], []
 
-    # クロスバリデーション
-    for fold_idx, (train_idx, val_idx) in enumerate(
-        seasonwise_split(train_data, n_splits, k)
-    ):
+    # 各シーズンの最初の k 試合を除外
+    temp_data = mark_prediction_flag(train_data, k)
+    temp_data = temp_data[temp_data["IsPrediction"]]
+
+    for fold_idx, (train_idx, val_idx) in enumerate(kf.split(temp_data)):
         logging.info(f"Fold {fold_idx + 1}/{n_splits}")
-        temp_train_data = train_data.loc[train_idx].copy()
-        temp_val_data = train_data.loc[val_idx].copy()
+
+        # データ分割
+        temp_train_data = temp_data.iloc[train_idx].copy()
+        temp_val_data = temp_data.iloc[val_idx].copy()
 
         # 特徴量生成
+        temp_train_data = add_ratings(temp_train_data, ratings_df)
         temp_train_data = add_elo_rating(temp_train_data)
         temp_train_data = add_team_stats(temp_train_data, k)
-        temp_train_data = add_ratings(temp_train_data, ratings_df)
         temp_train_data = add_diffs(temp_train_data)
 
-        temp_train_data = add_elo_rating(temp_train_data)
-        temp_val_data = add_team_stats(temp_val_data, k)
         temp_val_data = add_ratings(temp_val_data, ratings_df)
+        temp_val_data = add_elo_rating(temp_val_data)
+        temp_val_data = add_team_stats(temp_val_data, k)
         temp_val_data = add_diffs(temp_val_data)
 
         # モデル学習
@@ -178,15 +166,15 @@ for k in k_values:
         X_val = temp_val_data[features]
         y_val = temp_val_data["FTR"]
 
-        rf_model = RandomForestClassifier(random_state=42, verbose=0)
+        rf_model = RandomForestClassifier(random_state=42)
         rf_model.fit(X_train, y_train)
 
         # 評価
         # モデルの予測確率を取得
         y_probs = rf_model.predict_proba(X_val)
-
-        # RPSを計算する
         rps_score = evaluate_rps(y_val, y_probs)
+
+        # Accuracyも計算
         y_pred = rf_model.predict(X_val)
         acc_score = accuracy_score(y_val, y_pred)
 
@@ -205,19 +193,24 @@ for k in k_values:
     )
 
     # 最良の k を更新
-    if avg_rps < best_rps:
-        best_k, best_rps, best_accuracy = (
-            k,
-            avg_rps,
-            avg_accuracy,
-        )
+    if avg_accuracy > best_accuracy:
+        best_k = k
+        best_rps = avg_rps
+        best_accuracy = avg_accuracy
         logging.info(
             f"New best parameters: k={best_k}, RPS={best_rps:.4f}, Accuracy={best_accuracy:.4f}"
         )
 
 # 最終結果出力
 print(f"Best k: {best_k}")
-print(f"Best RPS: {best_rps:.4f}, Best Accuracy: {best_accuracy:.4f}")
+print(f"Best Accuracy: {best_accuracy:.4f}, RPS for Best Accuracy: {best_rps:.4f}")
+
+# 最適なkを用いて各シーズンの最初のk試合を除外
+train_data = mark_prediction_flag(train_data, best_k)
+train_data = train_data[train_data["IsPrediction"]]
+
+test_data = mark_prediction_flag(test_data, best_k)
+test_data = test_data[test_data["IsPrediction"]]
 
 # 最終的な特徴量生成
 logging.info("Generating final engineered data with optimized k...")

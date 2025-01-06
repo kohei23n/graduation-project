@@ -463,6 +463,7 @@ def add_team_stats(df, k):
 
 ## Diff Dataを追加する関数
 def add_diffs(df):
+    df = df.copy()
     df = df.loc[:, ~df.columns.duplicated()]
 
     # Elo の差分
