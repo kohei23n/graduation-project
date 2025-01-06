@@ -1,10 +1,6 @@
 import numpy as np
-from components.model_evaluation import evaluate_rps
-from sklearn.metrics import make_scorer
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
-
-rps_scorer = make_scorer(evaluate_rps, greater_is_better=False, response_method="predict_proba")
 
 # 1. RandomizedSearchCV でパラメータ範囲を絞る
 def run_randomized_search(X_train, y_train):
@@ -15,7 +11,7 @@ def run_randomized_search(X_train, y_train):
     max_features = ['log2', 'sqrt'] # 分岐の際に考慮する特徴量の数
     min_samples_split = [2, 5, 10] # 分岐を許すためのサンプル数
     min_samples_leaf = [1, 2, 4] # 葉ノードを許すためのサンプル数
-    criterion = ["gini", "entropy"] # 分岐の品質を評価する指標
+    criterion = ["gini", "entropy", "log_loss"] # 分岐の品質を評価する指標
     bootstrap = [True, False] # ブートストラップサンプリングを行うかどうか
 
     random_grid = {
@@ -37,8 +33,7 @@ def run_randomized_search(X_train, y_train):
         param_distributions=random_grid,
         n_iter=100,
         cv=3,
-        # scoring=rps_scorer,
-        scoring="accuracy",
+        scoring="neg_log_loss",
         verbose=2,
         random_state=42,
         n_jobs=-1,
@@ -83,8 +78,7 @@ def run_grid_search(X_train, y_train, random_params):
         estimator=rf_model,
         param_grid=param_grid,
         cv=3,
-        # scoring=rps_scorer,
-        scoring="accuracy",
+        scoring="neg_log_loss",
         verbose=2,
         n_jobs=-1,
     )

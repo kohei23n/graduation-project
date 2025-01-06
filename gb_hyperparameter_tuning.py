@@ -1,13 +1,6 @@
 import pandas as pd
 import xgboost as xgb
-from components.model_evaluation import evaluate_rps
-from sklearn.metrics import make_scorer
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
-
-rps_scorer = make_scorer(
-    evaluate_rps, greater_is_better=False, response_method="predict_proba"
-)
-
 
 # 1. RandomizedSearchCV でパラメータ範囲を絞る
 def run_randomized_search(X_train, y_train):
