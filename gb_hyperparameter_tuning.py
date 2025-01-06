@@ -23,8 +23,8 @@ def run_randomized_search(X_train, y_train):
         "gamma": [0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1],
     }
 
-    # 最適なパラメータでランダムフォレストモデルを構築
-    gb_model = xgb.XGBClassifier(random_state=42, objective="multi:softprob", eval_metric="mlogloss")
+    # 最適なパラメータで Gradient Boosting モデルを構築
+    gb_model = xgb.XGBClassifier(random_state=42, objective="multi:softprob")
 
     # ランダムサーチのインスタンス作成
     gb_random = RandomizedSearchCV(
@@ -73,9 +73,7 @@ def run_grid_search(X_train, y_train, random_params):
     }
 
     # XGBoostモデル
-    gb_model = xgb.XGBClassifier(
-        random_state=42, objective="multi:softprob", eval_metric="mlogloss"
-    )
+    gb_model = xgb.XGBClassifier(random_state=42, objective="multi:softprob")
 
     # GridSearchCV の設定
     grid_search = GridSearchCV(
@@ -100,7 +98,7 @@ def run_grid_search(X_train, y_train, random_params):
 def tune_hyperparameters(X_train, y_train):
     # 1. RandomizedSearchCV を実行してパラメータ範囲を取得
     random_params = run_randomized_search(X_train, y_train)
-    
+
     print("Randomized Search Best Parameters:")
     print(random_params)
 

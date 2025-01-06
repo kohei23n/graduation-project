@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import logging
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, log_loss
 from sklearn.model_selection import KFold
 from components.remove_k_weeks import mark_prediction_flag
 from components.model_evaluation import evaluate_rps
@@ -130,13 +130,15 @@ best_k, best_accuracy = None, 0.0
 logging.info("Starting hyperparameter tuning with K-Fold Cross-Validation...")
 
 
-# kの最適化
+# k の最適化
 n_splits = 5
 kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
 
+best_k, best_log_loss = None, float("inf")
+
 for k in k_values:
     logging.info(f"Testing k={k}")
-    rps_scores, accuracy_scores = [], []
+    log_losses, rps_scores, accuracy_scores = [], [], []
 
     # 各シーズンの最初の k 試合を除外
     temp_data = mark_prediction_flag(train_data, k)
@@ -172,38 +174,46 @@ for k in k_values:
         # 評価
         # モデルの予測確率を取得
         y_probs = rf_model.predict_proba(X_val)
+        current_log_loss = log_loss(y_val, y_probs)
         rps_score = evaluate_rps(y_val, y_probs)
 
-        # Accuracyも計算
+        # Accuracy も計算
         y_pred = rf_model.predict(X_val)
         acc_score = accuracy_score(y_val, y_pred)
 
+        # 評価スコアを記録
+        log_losses.append(current_log_loss)
         rps_scores.append(rps_score)
         accuracy_scores.append(acc_score)
 
         logging.info(
-            f"Fold {fold_idx + 1} - RPS: {rps_score:.4f}, Accuracy: {acc_score:.4f}"
+            f"Fold {fold_idx + 1} - Log Loss: {current_log_loss:.4f}, RPS: {rps_score:.4f}, Accuracy: {acc_score:.4f}"
         )
 
     # 平均スコアを計算
+    avg_log_loss = np.mean(log_losses)
     avg_rps = np.mean(rps_scores)
     avg_accuracy = np.mean(accuracy_scores)
+
     logging.info(
-        f"Average RPS: {avg_rps:.4f}, Average Accuracy: {avg_accuracy:.4f} for k={k}"
+        f"Average Log Loss: {avg_log_loss:.4f}, Average RPS: {avg_rps:.4f}, Average Accuracy: {avg_accuracy:.4f} for k={k}"
     )
 
     # 最良の k を更新
-    if avg_accuracy > best_accuracy:
+    if avg_log_loss < best_log_loss:
         best_k = k
+        best_log_loss = avg_log_loss
         best_rps = avg_rps
         best_accuracy = avg_accuracy
         logging.info(
-            f"New best parameters: k={best_k}, RPS={best_rps:.4f}, Accuracy={best_accuracy:.4f}"
+            f"New best parameters: k={best_k}, Log Loss={best_log_loss:.4f}, RPS={best_rps:.4f}, Accuracy={best_accuracy:.4f}"
         )
 
 # 最終結果出力
 print(f"Best k: {best_k}")
-print(f"Best Accuracy: {best_accuracy:.4f}, RPS for Best Accuracy: {best_rps:.4f}")
+print(
+    f"Best Log Loss: {best_log_loss:.4f}, RPS for Best Log Loss: {best_rps:.4f}, Accuracy for Best Log Loss: {best_accuracy:.4f}"
+)
 
 # 最適なkを用いて各シーズンの最初のk試合を除外
 train_data = mark_prediction_flag(train_data, best_k)
