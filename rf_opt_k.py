@@ -34,8 +34,8 @@ test_data = match_data_df[
 
 features = [
     # Elo
-    "HomeElo",
-    "AwayElo",
+    "HT_Elo",
+    "AT_Elo",
     # Points
     "HT_RecentPoints",
     "HT_HomeRecentPoints",
@@ -215,13 +215,6 @@ print(
     f"Best Log Loss: {best_log_loss:.4f}, RPS for Best Log Loss: {best_rps:.4f}, Accuracy for Best Log Loss: {best_accuracy:.4f}"
 )
 
-# 最適なkを用いて各シーズンの最初のk試合を除外
-train_data = mark_prediction_flag(train_data, best_k)
-train_data = train_data[train_data["IsPrediction"]]
-
-test_data = mark_prediction_flag(test_data, best_k)
-test_data = test_data[test_data["IsPrediction"]]
-
 # 最終的な特徴量生成
 logging.info("Generating final engineered data with optimized k...")
 
@@ -234,6 +227,13 @@ test_data = add_ratings(test_data, ratings_df)
 test_data = add_elo_rating(test_data)
 test_data = add_team_stats(test_data, best_k)
 test_data = add_diffs(test_data)
+
+# 最適なkを用いて各シーズンの最初のk試合を除外
+train_data = mark_prediction_flag(train_data, best_k)
+train_data = train_data[train_data["IsPrediction"]]
+
+test_data = mark_prediction_flag(test_data, best_k)
+test_data = test_data[test_data["IsPrediction"]]
 
 # 不要なカラムを削除
 required_columns = features + ["Season", "FTR"]

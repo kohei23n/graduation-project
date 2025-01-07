@@ -53,8 +53,8 @@ def add_ratings(df, ratings_df):
 
 def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
     
-    df["HomeElo"] = 0.0
-    df["AwayElo"] = 0.0
+    df["HT_Elo"] = 0.0
+    df["AT_Elo"] = 0.0
     
     ## シーズンごとにループ
     for season in df["Season"].unique():
@@ -92,8 +92,8 @@ def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
             team_elo[home_team] = new_home_elo
             team_elo[away_team] = new_away_elo
 
-        df.loc[season_data.index, "HomeElo"] = home_elo_ratings
-        df.loc[season_data.index, "AwayElo"] = away_elo_ratings
+        df.loc[season_data.index, "HT_Elo"] = home_elo_ratings
+        df.loc[season_data.index, "AT_Elo"] = away_elo_ratings
 
     return df
 
@@ -467,7 +467,7 @@ def add_diffs(df):
     df = df.loc[:, ~df.columns.duplicated()]
 
     # Elo の差分
-    df["EloDiff"] = df["HomeElo"] - df["AwayElo"]
+    df["EloDiff"] = df["HT_Elo"] - df["AT_Elo"]
 
     # Points の差分
     df["PointsDiff"] = df["HT_TotalPoints"] - df["AT_TotalPoints"]

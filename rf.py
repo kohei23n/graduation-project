@@ -15,8 +15,8 @@ test_data.to_html("./htmldata/test_data.html")
 ### モデルの学習と評価
 features = [
     # Elo
-    "HomeElo",
-    "AwayElo",
+    "HT_Elo",
+    "AT_Elo",
     # Points
     "HT_RecentPoints",
     "HT_HomeRecentPoints",

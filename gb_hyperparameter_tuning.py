@@ -8,8 +8,8 @@ def run_randomized_search(X_train, y_train):
     random_grid = {
         "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3],
         "max_depth": [2, 4, 6, 8],
-        "min_child_weight": [2, 4, 6, 8],
-        "gamma": [0, 0.01, 0.05, 0.01, 0.05, 0.1],
+        "min_child_weight": [2, 4, 6, 8, 10],
+        "gamma": [0, 0.001, 0.005, 0.01, 0.05, 0.1],
         "subsample": [0.5, 0.6, 0.7, 0.8, 0.9],
         "colsample_bytree": [0.5, 0.6, 0.7, 0.8, 0.9],
         "reg_alpha": [0, 0.001, 0.005, 0.01, 0.05, 0.1],
