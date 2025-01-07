@@ -1,5 +1,4 @@
 import pandas as pd
-from components.model_evaluation import evaluate_rps
 from rf_hyperparameter_tuning import tune_hyperparameters
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
@@ -112,11 +111,6 @@ rf_model.fit(X_train, y_train)
 # モデルの予測確率を取得
 y_pred = rf_model.predict(X_test)
 
-# RPSの計算
-y_probs = rf_model.predict_proba(X_test)
-mean_rps = evaluate_rps(y_test, y_probs)
-print(f"Mean RPS: {mean_rps:.3f}")
-
 # Accuracyの計算
 accuracy = accuracy_score(y_test, y_pred)
 print(f"Accuracy: {accuracy:.3f}")
@@ -131,10 +125,5 @@ feature_importance_df = feature_importance_df.sort_values(
 )
 print(feature_importance_df)
 
-## Results when hyperparameter tuning is applied for RPS:
-# Mean RPS: 0.193
-# Accuracy: 0.545
-
-## Accuracy when hyperparameter tuning is applied for accuracy:
-# Mean RPS: 0.192
-# Accuracy: 0.554
+# Results after hyperparameter tuning:
+# Accuracy: 

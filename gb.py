@@ -1,6 +1,5 @@
 import pandas as pd
 import xgboost as xgb
-from components.model_evaluation import evaluate_rps
 from gb_hyperparameter_tuning import tune_hyperparameters
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
@@ -120,11 +119,6 @@ gb_model.fit(X_train, y_train_encoded)
 # モデルの予測確率を取得
 y_pred = gb_model.predict(X_test)
 
-# RPSの計算
-y_probs = gb_model.predict_proba(X_test)
-mean_rps = evaluate_rps(y_test_encoded, y_probs)
-print(f"Mean RPS: {mean_rps:.3f}")
-
 # Accuracyの計算
 accuracy = accuracy_score(y_test_encoded, y_pred)
 print(f"Accuracy: {accuracy:.3f}")
@@ -140,5 +134,4 @@ feature_importance_df = feature_importance_df.sort_values(
 print(feature_importance_df)
 
 # Results after hyperparameter tuning:
-# Mean RPS: 0.193
-# Accuracy: 0.570
+# Accuracy: 0.571
