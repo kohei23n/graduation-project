@@ -10,7 +10,6 @@ from components.feature_engineering import (
     add_ratings,
     add_elo_rating,
     add_team_stats,
-    add_diffs,
 )
 
 # 進捗状況を表示するための設定
@@ -88,27 +87,6 @@ features = [
     "AwayMidfieldR",
     "AwayDefenceR",
     "AwayOverallR",
-    # Differences
-    "EloDiff",
-    "PointsDiff",
-    "RecentPointsDiff",
-    "HomeAwayPointsDiff",
-    "GoalsDiff",
-    "RecentGoalsDiff",
-    "HomeAwayGoalsDiff",
-    "GDDiff",
-    "RecentGDDiff",
-    "HomeAwayGDDiff",
-    "ShotsDiff",
-    "RecentShotsDiff",
-    "HomeAwayShotsDiff",
-    "SOTDiff",
-    "RecentSOTDiff",
-    "HomeAwaySOTDiff",
-    "ARDiff",
-    "MRDiff",
-    "DRDiff",
-    "ORDiff",
     # Betting Odds
     "B365H",
     "B365D",
@@ -157,12 +135,10 @@ match_data_df = add_ratings(match_data_df, ratings_df)
 #         temp_train_data = add_ratings(temp_train_data, ratings_df)
 #         temp_train_data = add_elo_rating(temp_train_data)
 #         temp_train_data = add_team_stats(temp_train_data, k)
-#         temp_train_data = add_diffs(temp_train_data)
 
 #         temp_val_data = add_ratings(temp_val_data, ratings_df)
 #         temp_val_data = add_elo_rating(temp_val_data)
 #         temp_val_data = add_team_stats(temp_val_data, k)
-#         temp_val_data = add_diffs(temp_val_data)
 
 #         # モデル学習
 #         X_train = temp_train_data[features]
@@ -223,12 +199,10 @@ match_data_df = add_ratings(match_data_df, ratings_df)
 # train_data = add_ratings(train_data, ratings_df)
 # train_data = add_elo_rating(train_data)
 # train_data = add_team_stats(train_data, best_k)
-# train_data = add_diffs(train_data)
 
 # test_data = add_ratings(test_data, ratings_df)
 # test_data = add_elo_rating(test_data)
 # test_data = add_team_stats(test_data, best_k)
-# test_data = add_diffs(test_data)
 
 # # 最適なkを用いて各シーズンの最初のk試合を除外
 # train_data = mark_prediction_flag(train_data, best_k)
@@ -252,30 +226,28 @@ match_data_df = add_ratings(match_data_df, ratings_df)
 # logging.info(f"Train data saved to {train_output_path}")
 # logging.info(f"Test data saved to {test_output_path}")
 
-# Best k: 5
-# Best Log Loss: 1.2323
-# Accuracy for Best Log Loss: 0.5089
+# Best k: 6
+# Best Log Loss: 1.2215
+# Accuracy for Best Log Loss: 0.5020
 
-# 統一性を意識して、k=4 で特徴量生成
+# 統一性を意識して、k=6 で特徴量生成
 
 # 最終的な特徴量生成
-logging.info("Generating final engineered data with k=4")
+logging.info("Generating final engineered data with k=6")
 
 train_data = add_ratings(train_data, ratings_df)
 train_data = add_elo_rating(train_data)
-train_data = add_team_stats(train_data, k=4)
-train_data = add_diffs(train_data)
+train_data = add_team_stats(train_data, k=6)
 
 test_data = add_ratings(test_data, ratings_df)
 test_data = add_elo_rating(test_data)
-test_data = add_team_stats(test_data, k=4)
-test_data = add_diffs(test_data)
+test_data = add_team_stats(test_data, k=6)
 
 # 最適なkを用いて各シーズンの最初のk試合を除外
-train_data = mark_prediction_flag(train_data, k=4)
+train_data = mark_prediction_flag(train_data, k=6)
 train_data = train_data[train_data["IsPrediction"]]
 
-test_data = mark_prediction_flag(test_data, k=4)
+test_data = mark_prediction_flag(test_data, k=6)
 test_data = test_data[test_data["IsPrediction"]]
 
 # 不要なカラムを削除

@@ -1,7 +1,9 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from rf_hyperparameter_tuning import tune_hyperparameters
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
 # データの読み込み
 train_data = pd.read_csv("./csv/rf_train_data.csv")
@@ -59,7 +61,7 @@ features = [
     "AT_AwayRecentSOT",
     "AT_TotalShots",
     "AT_TotalSOT",
-    # Ratings 
+    # Ratings
     "HomeAttackR",
     "HomeMidfieldR",
     "HomeDefenceR",
@@ -68,27 +70,6 @@ features = [
     "AwayMidfieldR",
     "AwayDefenceR",
     "AwayOverallR",
-    # Differences
-    "EloDiff",
-    "PointsDiff",
-    "RecentPointsDiff",
-    "HomeAwayPointsDiff",
-    "GoalsDiff",
-    "RecentGoalsDiff",
-    "HomeAwayGoalsDiff",
-    "GDDiff",
-    "RecentGDDiff",
-    "HomeAwayGDDiff",
-    "ShotsDiff",
-    "RecentShotsDiff",
-    "HomeAwayShotsDiff",
-    "SOTDiff",
-    "RecentSOTDiff",
-    "HomeAwaySOTDiff",
-    "ARDiff",
-    "MRDiff",
-    "DRDiff",
-    "ORDiff",
     # Betting Odds
     "B365H",
     "B365D",
@@ -103,6 +84,8 @@ y_test = test_data["FTR"]
 # チューニングの実行
 best_model, best_params = tune_hyperparameters(X_train, y_train)
 print(f"Best Parameters: {best_params}")
+
+# best_params = {'criterion': 'entropy', 'max_depth': 10, 'max_features': 'log2', 'min_samples_leaf': 4, 'min_samples_split': 2, 'n_estimators': 1500}
 
 # 最適なパラメータでランダムフォレストモデルを構築
 rf_model = RandomForestClassifier(**best_params)
@@ -126,4 +109,50 @@ feature_importance_df = feature_importance_df.sort_values(
 print(feature_importance_df)
 
 # Results after hyperparameter tuning:
-# Accuracy: 
+# Accuracy: 0.562
+
+# Confusion Matrix 作成
+conf_matrix = confusion_matrix(y_test, y_pred, labels=rf_model.classes_)
+
+# Confusion Matrix を DataFrame に変換
+conf_matrix_df = pd.DataFrame(
+    conf_matrix, index=rf_model.classes_, columns=rf_model.classes_
+)
+
+# Confusion Matrix のプロット
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix_df, annot=True, fmt="d", cmap="Blues", cbar=False)
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted Labels")
+plt.ylabel("True Labels")
+plt.show()
+
+# Classification Report の作成
+report_dict = classification_report(
+    y_test, y_pred, target_names=rf_model.classes_, output_dict=True
+)
+
+# Classification Report を DataFrame に変換
+report_df = pd.DataFrame(report_dict).transpose()
+
+# Classification Report の表示
+print("Classification Report:")
+print(report_df)
+
+# Classification Report のプロット
+plt.figure(figsize=(10, 6))
+sns.heatmap(report_df.iloc[:-3, :-1], annot=True, cmap="Blues", fmt=".3f")
+plt.title("Classification Metrics")
+plt.xlabel("Metrics")
+plt.ylabel("Classes")
+plt.show()
+
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred, labels=rf_model.classes_)
+conf_matrix_df = pd.DataFrame(
+    conf_matrix,
+    index=rf_model.classes_,
+    columns=rf_model.classes_,
+)
+print("\nConfusion Matrix:")
+print(conf_matrix_df)

@@ -7,7 +7,6 @@ def run_randomized_search(X_train, y_train):
     
     n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)] # 決定木の数
     max_depth = [int(x) for x in np.linspace(10, 110, num = 11)] # 木の深さ
-    max_depth.append(None) # 木の深さの最大値
     max_features = ['log2', 'sqrt'] # 分岐の際に考慮する特徴量の数
     min_samples_split = [2, 5, 10] # 分岐を許すためのサンプル数
     min_samples_leaf = [1, 2, 4] # 葉ノードを許すためのサンプル数
@@ -47,11 +46,11 @@ def run_randomized_search(X_train, y_train):
 
     return rf_random.best_params_
 
-def run_grid_search(X_train, y_train, random_params):
+def run_grid_search(X_train, y_train, random_params):    
     # グリッドサーチ用のパラメータ範囲
     param_grid = {
         "n_estimators": [
-            max(50, random_params["n_estimators"] - 100),  # 最小50を保証
+            max(50, random_params["n_estimators"] - 100),
             random_params["n_estimators"],
             random_params["n_estimators"] + 100,
         ],

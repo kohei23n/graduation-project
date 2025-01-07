@@ -9,7 +9,6 @@ from components.feature_engineering import (
     add_ratings,
     add_elo_rating,
     add_team_stats,
-    add_diffs,
 )
 
 # 進捗状況を表示するための設定
@@ -87,27 +86,6 @@ features = [
     "AwayMidfieldR",
     "AwayDefenceR",
     "AwayOverallR",
-    # Differences
-    "EloDiff",
-    "PointsDiff",
-    "RecentPointsDiff",
-    "HomeAwayPointsDiff",
-    "GoalsDiff",
-    "RecentGoalsDiff",
-    "HomeAwayGoalsDiff",
-    "GDDiff",
-    "RecentGDDiff",
-    "HomeAwayGDDiff",
-    "ShotsDiff",
-    "RecentShotsDiff",
-    "HomeAwayShotsDiff",
-    "SOTDiff",
-    "RecentSOTDiff",
-    "HomeAwaySOTDiff",
-    "ARDiff",
-    "MRDiff",
-    "DRDiff",
-    "ORDiff",
     # Betting Odds
     "B365H",
     "B365D",
@@ -120,95 +98,93 @@ teams = set(match_data_df["HomeTeam"]).union(set(match_data_df["AwayTeam"]))
 match_data_df = add_ratings(match_data_df, ratings_df)
 
 
-# # k の最適化の範囲
-# k_values = range(3, 8)
-# best_k, best_accuracy = None, 0.0
+# k の最適化の範囲
+k_values = range(3, 8)
+best_k, best_accuracy = None, 0.0
 
 
-# # K-Fold Cross-Validation
-# logging.info("Starting hyperparameter tuning with K-Fold Cross-Validation...")
+# K-Fold Cross-Validation
+logging.info("Starting hyperparameter tuning with K-Fold Cross-Validation...")
 
 
-# # k の最適化
-# n_splits = 5
-# kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+# k の最適化
+n_splits = 5
+kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-# best_k, best_log_loss = None, float("inf")
+best_k, best_log_loss = None, float("inf")
 
-# for k in k_values:
-#     logging.info(f"Testing k={k}")
-#     log_losses, accuracy_scores = [], []
+for k in k_values:
+    logging.info(f"Testing k={k}")
+    log_losses, accuracy_scores = [], []
 
-#     # 各シーズンの最初の k 試合を除外
-#     temp_data = mark_prediction_flag(train_data, k)
-#     temp_data = temp_data[temp_data["IsPrediction"]]
+    # 各シーズンの最初の k 試合を除外
+    temp_data = mark_prediction_flag(train_data, k)
+    temp_data = temp_data[temp_data["IsPrediction"]]
 
-#     for fold_idx, (train_idx, val_idx) in enumerate(kf.split(temp_data)):
-#         logging.info(f"Fold {fold_idx + 1}/{n_splits}")
+    for fold_idx, (train_idx, val_idx) in enumerate(kf.split(temp_data)):
+        logging.info(f"Fold {fold_idx + 1}/{n_splits}")
 
-#         # データ分割
-#         temp_train_data = temp_data.iloc[train_idx].copy()
-#         temp_val_data = temp_data.iloc[val_idx].copy()
+        # データ分割
+        temp_train_data = temp_data.iloc[train_idx].copy()
+        temp_val_data = temp_data.iloc[val_idx].copy()
 
-#         # 特徴量生成
-#         temp_train_data = add_ratings(temp_train_data, ratings_df)
-#         temp_train_data = add_elo_rating(temp_train_data)
-#         temp_train_data = add_team_stats(temp_train_data, k)
-#         temp_train_data = add_diffs(temp_train_data)
+        # 特徴量生成
+        temp_train_data = add_ratings(temp_train_data, ratings_df)
+        temp_train_data = add_elo_rating(temp_train_data)
+        temp_train_data = add_team_stats(temp_train_data, k)
 
-#         temp_val_data = add_ratings(temp_val_data, ratings_df)
-#         temp_val_data = add_elo_rating(temp_val_data)
-#         temp_val_data = add_team_stats(temp_val_data, k)
-#         temp_val_data = add_diffs(temp_val_data)
+        temp_val_data = add_ratings(temp_val_data, ratings_df)
+        temp_val_data = add_elo_rating(temp_val_data)
+        temp_val_data = add_team_stats(temp_val_data, k)
 
-#         # モデル学習
-#         X_train = temp_train_data[features]
-#         y_train = temp_train_data["FTR"]
-#         X_val = temp_val_data[features]
-#         y_val = temp_val_data["FTR"]
+        # モデル学習
+        X_train = temp_train_data[features]
+        y_train = temp_train_data["FTR"]
+        X_val = temp_val_data[features]
+        y_val = temp_val_data["FTR"]
 
-#         rf_model = RandomForestClassifier(random_state=42)
-#         rf_model.fit(X_train, y_train)
+        rf_model = RandomForestClassifier(random_state=42)
+        rf_model.fit(X_train, y_train)
 
-#         # 評価
-#         # モデルの予測確率を取得
-#         y_probs = rf_model.predict_proba(X_val)
-#         current_log_loss = log_loss(y_val, y_probs)
+        # 評価
+        # モデルの予測確率を取得
+        y_probs = rf_model.predict_proba(X_val)
+        current_log_loss = log_loss(y_val, y_probs)
 
-#         # Accuracy も計算
-#         y_pred = rf_model.predict(X_val)
-#         acc_score = accuracy_score(y_val, y_pred)
+        # Accuracy も計算
+        y_pred = rf_model.predict(X_val)
+        acc_score = accuracy_score(y_val, y_pred)
 
-#         # 評価スコアを記録
-#         log_losses.append(current_log_loss)
-#         accuracy_scores.append(acc_score)
+        # 評価スコアを記録
+        log_losses.append(current_log_loss)
+        accuracy_scores.append(acc_score)
 
-#         logging.info(
-#             f"Fold {fold_idx + 1} - Log Loss: {current_log_loss:.4f}, Accuracy: {acc_score:.4f}"
-#         )
+        logging.info(
+            f"Fold {fold_idx + 1} - Log Loss: {current_log_loss:.4f}, Accuracy: {acc_score:.4f}"
+        )
 
-#     # 平均スコアを計算
-#     avg_log_loss = np.mean(log_losses)
-#     avg_accuracy = np.mean(accuracy_scores)
+    # 平均スコアを計算
+    avg_log_loss = np.mean(log_losses)
+    avg_accuracy = np.mean(accuracy_scores)
 
-#     logging.info(
-#         f"Average Log Loss: {avg_log_loss:.4f}, Average Accuracy: {avg_accuracy:.4f} for k={k}"
-#     )
+    logging.info(
+        f"Average Log Loss: {avg_log_loss:.4f}, Average Accuracy: {avg_accuracy:.4f} for k={k}"
+    )
 
-#     # 最良の k を更新
-#     if avg_log_loss < best_log_loss:
-#         best_k = k
-#         best_log_loss = avg_log_loss
-#         best_accuracy = avg_accuracy
-#         logging.info(
-#             f"New best parameters: k={best_k}, Log Loss={best_log_loss:.4f}, Accuracy={best_accuracy:.4f}"
-#         )
+    # 最良の k を更新
+    if avg_log_loss < best_log_loss:
+        best_k = k
+        best_log_loss = avg_log_loss
+        best_accuracy = avg_accuracy
+        logging.info(
+            f"New best parameters: k={best_k}, Log Loss={best_log_loss:.4f}, Accuracy={best_accuracy:.4f}"
+        )
 
-# # 最終結果出力
-# print(f"Best k: {best_k}")
-# print(
-#     f"Best Log Loss: {best_log_loss:.4f}, Accuracy for Best Log Loss: {best_accuracy:.4f}"
-# )
+# 最終結果出力
+print(f"Best k: {best_k}")
+print(
+    f"Best Log Loss: {best_log_loss:.4f}, Accuracy for Best Log Loss: {best_accuracy:.4f}"
+)
 
 # # 最終的な特徴量生成
 # logging.info("Generating final engineered data with optimized k...")
@@ -216,12 +192,10 @@ match_data_df = add_ratings(match_data_df, ratings_df)
 # train_data = add_ratings(train_data, ratings_df)
 # train_data = add_elo_rating(train_data)
 # train_data = add_team_stats(train_data, best_k)
-# train_data = add_diffs(train_data)
 
 # test_data = add_ratings(test_data, ratings_df)
 # test_data = add_elo_rating(test_data)
 # test_data = add_team_stats(test_data, best_k)
-# test_data = add_diffs(test_data)
 
 # # 最適なkを用いて各シーズンの最初のk試合を除外
 # train_data = mark_prediction_flag(train_data, best_k)
@@ -245,30 +219,28 @@ match_data_df = add_ratings(match_data_df, ratings_df)
 # logging.info(f"Train data saved to {train_output_path}")
 # logging.info(f"Test data saved to {test_output_path}")
 
-# Best k: 3
-# Best Log Loss: 1.0017
-# Accuracy for Best Log Loss: 0.5303
+# Best k: 7
+# Best Log Loss: 1.0063
+# Accuracy for Best Log Loss: 0.5133
 
-# 統一性を意識して、k=4 で特徴量生成
+# 統一性を意識して、k=6 で特徴量生成
 
 # 最終的な特徴量生成
-logging.info("Generating final engineered data with k=4")
+logging.info("Generating final engineered data with k=6")
 
 train_data = add_ratings(train_data, ratings_df)
 train_data = add_elo_rating(train_data)
-train_data = add_team_stats(train_data, k=4)
-train_data = add_diffs(train_data)
+train_data = add_team_stats(train_data, k=6)
 
 test_data = add_ratings(test_data, ratings_df)
 test_data = add_elo_rating(test_data)
-test_data = add_team_stats(test_data, k=4)
-test_data = add_diffs(test_data)
+test_data = add_team_stats(test_data, k=6)
 
 # 最適なkを用いて各シーズンの最初のk試合を除外
-train_data = mark_prediction_flag(train_data, k=4)
+train_data = mark_prediction_flag(train_data, k=6)
 train_data = train_data[train_data["IsPrediction"]]
 
-test_data = mark_prediction_flag(test_data, k=4)
+test_data = mark_prediction_flag(test_data, k=6)
 test_data = test_data[test_data["IsPrediction"]]
 
 # 不要なカラムを削除
