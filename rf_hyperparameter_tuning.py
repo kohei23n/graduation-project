@@ -5,22 +5,14 @@ from sklearn.ensemble import RandomForestClassifier
 # 1. RandomizedSearchCV でパラメータ範囲を絞る
 def run_randomized_search(X_train, y_train):
     
-    n_estimators = [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)] # 決定木の数
-    max_depth = [int(x) for x in np.linspace(10, 110, num = 11)] # 木の深さ
-    max_features = ['log2', 'sqrt'] # 分岐の際に考慮する特徴量の数
-    min_samples_split = [2, 5, 10] # 分岐を許すためのサンプル数
-    min_samples_leaf = [1, 2, 4] # 葉ノードを許すためのサンプル数
-    criterion = ["gini", "entropy", "log_loss"] # 分岐の品質を評価する指標
-    bootstrap = [True, False] # ブートストラップサンプリングを行うかどうか
-
     random_grid = {
-        "n_estimators": n_estimators,
-        "max_depth": max_depth,
-        "min_samples_split": min_samples_split,
-        "min_samples_leaf": min_samples_leaf,
-        "max_features": max_features,
-        "criterion": criterion,
-        "bootstrap": bootstrap,
+        "n_estimators": [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000],
+        "max_depth": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110],
+        "max_features": ['log2', 'sqrt'],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "criterion": ["gini", "entropy", "log_loss"],
+        "bootstrap": [True, False],
     }
 
     # ランダムフォレストモデル
