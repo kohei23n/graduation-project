@@ -1,19 +1,24 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import logging
 from rf_hyperparameter_tuning import tune_hyperparameters
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from components.opt_k import load_and_prepare_data, split_data, mark_prediction_flag
+from components.feature_engineering import add_team_stats
 
-# データの読み込み
-train_data = pd.read_csv("./csv/rf_train_data.csv")
-test_data = pd.read_csv("./csv/rf_test_data.csv")
+# 進捗状況を表示するための設定
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
-## これまでのデータを HTML で表示
-train_data.to_html("./htmldata/train_data.html")
-test_data.to_html("./htmldata/test_data.html")
+# データの読み込みと準備
+logging.info("Loading and preparing data...")
+match_data_df, ratings_df = load_and_prepare_data(
+    "./csv/match_data.csv", "./csv/ratings_data.csv"
+)
 
-### モデルの学習と評価
+train_data, test_data = split_data(match_data_df)
+
 features = [
     # Elo
     "HT_Elo",
@@ -76,6 +81,28 @@ features = [
     "B365A",
 ]
 
+# 最終的な特徴量生成
+logging.info("Generating final engineered data with k=5")
+
+train_data = add_team_stats(train_data, ratings_df, k=5)
+test_data = add_team_stats(test_data, ratings_df, k=5)
+
+# 最適なkを用いて各シーズンの最初のk試合を除外
+train_data = mark_prediction_flag(train_data, k=5)
+train_data = train_data[train_data["IsPrediction"]]
+
+test_data = mark_prediction_flag(test_data, k=5)
+test_data = test_data[test_data["IsPrediction"]]
+
+# 不要なカラムを削除
+required_columns = features + ["Season", "FTR"]
+train_data = train_data[required_columns]
+test_data = test_data[required_columns]
+
+# 最終データを保存
+train_data.to_html("./htmldata/train_data.html")
+test_data.to_html("./htmldata/test_data.html")
+
 X_train = train_data[features]
 y_train = train_data["FTR"]
 X_test = test_data[features]
@@ -84,8 +111,6 @@ y_test = test_data["FTR"]
 # チューニングの実行
 best_model, best_params = tune_hyperparameters(X_train, y_train)
 print(f"Best Parameters: {best_params}")
-
-# best_params = {'criterion': 'entropy', 'max_depth': 10, 'max_features': 'log2', 'min_samples_leaf': 4, 'min_samples_split': 2, 'n_estimators': 1500}
 
 # 最適なパラメータでランダムフォレストモデルを構築
 rf_model = RandomForestClassifier(**best_params)
@@ -109,7 +134,7 @@ feature_importance_df = feature_importance_df.sort_values(
 print(feature_importance_df)
 
 # Results after hyperparameter tuning:
-# Accuracy: 0.562
+# Accuracy: 0.565
 
 # Confusion Matrix 作成
 conf_matrix = confusion_matrix(y_test, y_pred, labels=rf_model.classes_)

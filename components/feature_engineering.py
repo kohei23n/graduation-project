@@ -449,7 +449,9 @@ def add_shots_stats(df, k):
 
 
 # それぞれの一括で統計量を計算し、まとめてデータフレームに追加
-def add_team_stats(df, k):
+def add_team_stats(df, ratings_df, k):
+    df = add_ratings(df, ratings_df)
+    df = add_elo_rating(df)
     df = add_points_stats(df, k)
     df = add_goals_stats(df, k)
     df = add_shots_stats(df, k)
