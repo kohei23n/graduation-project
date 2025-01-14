@@ -1,5 +1,6 @@
 import logging
-from components.common import load_and_prepare_data, split_data
+from components.common import load_and_prepare_data, split_data, features, remove_first_k_gameweeks
+from components.feature_engineering import add_team_stats
 from components.opt_k import optimise_k
 
 # 進捗状況を表示するための設定
@@ -11,48 +12,11 @@ match_data_df, ratings_df = load_and_prepare_data(
     "./csv/match_data.csv", "./csv/ratings_data.csv"
 )
 
-features = [
-    # Ability
-    "HT_AttackR",
-    "HT_MidfieldR",
-    "HT_DefenceR",
-    "HT_OverallR",
-    "AT_AttackR",
-    "AT_MidfieldR",
-    "AT_DefenceR",
-    "AT_OverallR",
-    "HT_AveragePPG",
-    "AT_AveragePPG",
-    # Recent Performance
-    "HT_RecentShots",
-    "HT_RecentSOT",
-    "HT_RecentShotsConceded",
-    "HT_RecentSOTConceded",
-    "AT_RecentShots",
-    "AT_RecentSOT",
-    "AT_RecentShotsConceded",
-    "AT_RecentSOTConceded",
-    # Home Advantage
-    "HT_HomeWinRate",
-    "HT_HomeDrawRate",
-    "HT_HomeLossRate",
-    "AT_AwayWinRate",
-    "AT_AwayDrawRate",
-    "AT_AwayLossRate",
-    # Elo
-    "HT_Elo",
-    "AT_Elo",
-    # Betting Odds
-    "B365H",
-    "B365D",
-    "B365A",
-]
-
 # データの分割
 logging.info("Splitting data...")
 train_data, test_data = split_data(match_data_df)
 
-# K の最適化
+# K の最適化（一回でOK）
 logging.info("Running optimization for K with Random Forest...")
 best_k, best_log_loss, best_accuracy = optimise_k(
     train_data, ratings_df, features, model_type="rf"
@@ -74,3 +38,28 @@ logging.info(
 )
 
 # (GB) Best k: 5, Log Loss: 1.2136760862953202, Accuracy: 0.5018939393939394
+
+# 最終的な特徴量生成
+logging.info("Generating final engineered data with k=4")
+
+train_data = add_team_stats(train_data, ratings_df, k=4)
+test_data = add_team_stats(test_data, ratings_df, k=4)
+
+# 最適なkを用いて各シーズンの最初のk試合を除外
+train_data = remove_first_k_gameweeks(train_data, k=4)
+test_data = remove_first_k_gameweeks(test_data, k=4)
+
+# 不要なカラムを削除
+required_columns = features + ["Season", "FTR"]
+train_data = train_data[required_columns]
+test_data = test_data[required_columns]
+
+# 最終データを保存（CSV, HTML）
+logging.info("Saving data...")
+train_data.to_csv("./csv/train_data.csv", index=False)
+test_data.to_csv("./csv/test_data.csv", index=False)
+
+train_data.to_html("./htmldata/train_data.html")
+test_data.to_html("./htmldata/test_data.html")
+
+logging.info("Data saved successfully!")

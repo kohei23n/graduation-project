@@ -1,4 +1,3 @@
-import numpy as np
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
@@ -18,6 +17,7 @@ def run_randomized_search(X_train, y_train, model_type):
             "bootstrap": [True, False],
         }
         model = RandomForestClassifier(random_state=42)
+        valid_keys = random_grid.keys()
     elif model_type == "xgb":
         random_grid = {
             "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3],
@@ -30,7 +30,7 @@ def run_randomized_search(X_train, y_train, model_type):
             "reg_lambda": [0, 0.001, 0.005, 0.01, 0.05, 0.1],
         }
         model = xgb.XGBClassifier(random_state=42, objective="multi:softprob")
-    
+        valid_keys = random_grid.keys()
 
     # RandomizedSearchCV の設定
     model_random = RandomizedSearchCV(
@@ -46,11 +46,16 @@ def run_randomized_search(X_train, y_train, model_type):
 
     print("Running RandomizedSearchCV...")
     model_random.fit(X_train, y_train)
+    
+    # 最適なパラメータをフィルタリング
+    best_params = {
+        key: value for key, value in model_random.best_params_.items() if key in valid_keys
+    }
 
     print("Best Parameters from RandomizedSearchCV:")
-    print(model_random.best_params_)
+    print(best_params)
 
-    return model_random.best_params_
+    return best_params
 
 
 def run_grid_search(X_train, y_train, random_params, model_type):

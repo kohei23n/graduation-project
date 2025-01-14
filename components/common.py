@@ -27,5 +27,43 @@ def remove_first_k_gameweeks(df, k):
     df = df.sort_values(by=["Season", "Date"]).copy()
     # シーズンごとの最初の k 試合を除外
     df = df[df.groupby("Season").cumcount() >= (k * 10)]
-    
+
     return df
+
+
+features = [
+    # Ability
+    "HT_AttackR",
+    "HT_MidfieldR",
+    "HT_DefenceR",
+    "HT_OverallR",
+    "AT_AttackR",
+    "AT_MidfieldR",
+    "AT_DefenceR",
+    "AT_OverallR",
+    "HT_AveragePPG",
+    "AT_AveragePPG",
+    # Recent Performance
+    "HT_RecentShots",
+    "HT_RecentSOT",
+    "HT_RecentShotsConceded",
+    "HT_RecentSOTConceded",
+    "AT_RecentShots",
+    "AT_RecentSOT",
+    "AT_RecentShotsConceded",
+    "AT_RecentSOTConceded",
+    # Home Advantage
+    "HT_HomeWinRate",
+    "HT_HomeDrawRate",
+    "HT_HomeLossRate",
+    "AT_AwayWinRate",
+    "AT_AwayDrawRate",
+    "AT_AwayLossRate",
+    # Elo
+    "HT_Elo",
+    "AT_Elo",
+    # Betting Odds
+    "B365H",
+    "B365D",
+    "B365A",
+]

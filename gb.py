@@ -6,7 +6,7 @@ import logging
 from sklearn.preprocessing import LabelEncoder
 from components.common import load_and_prepare_data, split_data, remove_first_k_gameweeks
 from components.feature_engineering import add_team_stats
-from components.hyperparameter_tuning import tune_hyperparameters
+from components.tune_hyperparameters import tune_hyperparameters
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
 # 進捗状況を表示するための設定
