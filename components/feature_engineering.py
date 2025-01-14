@@ -103,7 +103,79 @@ def add_avg_ppg_stats(df):
 
 
 # -------------------------
-# 2. recent performance (直近 k 試合の Shots, SOT, Shots Conceded, SOT Conceded)
+# 2. home advantage (W, D, L %)
+# -------------------------
+
+
+## シーズンごとの累積平均ポイントを計算する関数
+def add_wdl_rates(df):
+    df["HT_HomeWinRate"] = 0.0
+    df["HT_HomeDrawRate"] = 0.0
+    df["HT_HomeLossRate"] = 0.0
+    df["AT_AwayWinRate"] = 0.0
+    df["AT_AwayDrawRate"] = 0.0
+    df["AT_AwayLossRate"] = 0.0
+
+    # シーズンごとにデータを処理
+    for season in df["Season"].unique():
+        season_data = df[df["Season"] == season]
+        teams = set(season_data["HomeTeam"]).union(season_data["AwayTeam"])
+
+        # チームごとの累積試合結果（ホーム、アウェイ別）を初期化
+        team_home_stats = {
+            team: {"W": 0, "D": 0, "L": 0, "Matches": 0} for team in teams
+        }
+        team_away_stats = {
+            team: {"W": 0, "D": 0, "L": 0, "Matches": 0} for team in teams
+        }
+
+        # 各試合を順に処理
+        for idx, row in season_data.iterrows():
+            home_team, away_team = row["HomeTeam"], row["AwayTeam"]
+            result = row["FTR"]
+
+            # ホームチームの勝率、引き分け率、負け率を計算（試合前の値を使用）
+            matches = team_home_stats[home_team]["Matches"]
+            if matches > 0:
+                df.at[idx, "HT_HomeWinRate"] = team_home_stats[home_team]["W"] / matches
+                df.at[idx, "HT_HomeDrawRate"] = (
+                    team_home_stats[home_team]["D"] / matches
+                )
+                df.at[idx, "HT_HomeLossRate"] = (
+                    team_home_stats[home_team]["L"] / matches
+                )
+
+            # アウェイチームの勝率、引き分け率、負け率を計算（試合前の値を使用）
+            matches = team_away_stats[away_team]["Matches"]
+            if matches > 0:
+                df.at[idx, "AT_AwayWinRate"] = team_away_stats[away_team]["W"] / matches
+                df.at[idx, "AT_AwayDrawRate"] = (
+                    team_away_stats[away_team]["D"] / matches
+                )
+                df.at[idx, "AT_AwayLossRate"] = (
+                    team_away_stats[away_team]["L"] / matches
+                )
+
+            # 試合後の結果を累積に更新
+            if result == "H":  # ホーム勝ち
+                team_home_stats[home_team]["W"] += 1
+                team_away_stats[away_team]["L"] += 1
+            elif result == "A":  # アウェイ勝ち
+                team_home_stats[home_team]["L"] += 1
+                team_away_stats[away_team]["W"] += 1
+            else:  # 引き分け
+                team_home_stats[home_team]["D"] += 1
+                team_away_stats[away_team]["D"] += 1
+
+            # 試合数を更新
+            team_home_stats[home_team]["Matches"] += 1
+            team_away_stats[away_team]["Matches"] += 1
+
+    return df
+
+
+# -------------------------
+# 3. recent performance (直近 k 試合の Shots, SOT, Shots Conceded, SOT Conceded)
 # -------------------------
 
 
@@ -190,78 +262,6 @@ def add_shots_stats(df, k):
 
 
 # -------------------------
-# 3. home advantage (W, D, L %)
-# -------------------------
-
-
-## シーズンごとの累積平均ポイントを計算する関数
-def add_wdl_rates(df):
-    df["HT_HomeWinRate"] = 0.0
-    df["HT_HomeDrawRate"] = 0.0
-    df["HT_HomeLossRate"] = 0.0
-    df["AT_AwayWinRate"] = 0.0
-    df["AT_AwayDrawRate"] = 0.0
-    df["AT_AwayLossRate"] = 0.0
-
-    # シーズンごとにデータを処理
-    for season in df["Season"].unique():
-        season_data = df[df["Season"] == season]
-        teams = set(season_data["HomeTeam"]).union(season_data["AwayTeam"])
-
-        # チームごとの累積試合結果（ホーム、アウェイ別）を初期化
-        team_home_stats = {
-            team: {"W": 0, "D": 0, "L": 0, "Matches": 0} for team in teams
-        }
-        team_away_stats = {
-            team: {"W": 0, "D": 0, "L": 0, "Matches": 0} for team in teams
-        }
-
-        # 各試合を順に処理
-        for idx, row in season_data.iterrows():
-            home_team, away_team = row["HomeTeam"], row["AwayTeam"]
-            result = row["FTR"]
-
-            # ホームチームの勝率、引き分け率、負け率を計算（試合前の値を使用）
-            matches = team_home_stats[home_team]["Matches"]
-            if matches > 0:
-                df.at[idx, "HT_HomeWinRate"] = team_home_stats[home_team]["W"] / matches
-                df.at[idx, "HT_HomeDrawRate"] = (
-                    team_home_stats[home_team]["D"] / matches
-                )
-                df.at[idx, "HT_HomeLossRate"] = (
-                    team_home_stats[home_team]["L"] / matches
-                )
-
-            # アウェイチームの勝率、引き分け率、負け率を計算（試合前の値を使用）
-            matches = team_away_stats[away_team]["Matches"]
-            if matches > 0:
-                df.at[idx, "AT_AwayWinRate"] = team_away_stats[away_team]["W"] / matches
-                df.at[idx, "AT_AwayDrawRate"] = (
-                    team_away_stats[away_team]["D"] / matches
-                )
-                df.at[idx, "AT_AwayLossRate"] = (
-                    team_away_stats[away_team]["L"] / matches
-                )
-
-            # 試合後の結果を累積に更新
-            if result == "H":  # ホーム勝ち
-                team_home_stats[home_team]["W"] += 1
-                team_away_stats[away_team]["L"] += 1
-            elif result == "A":  # アウェイ勝ち
-                team_home_stats[home_team]["L"] += 1
-                team_away_stats[away_team]["W"] += 1
-            else:  # 引き分け
-                team_home_stats[home_team]["D"] += 1
-                team_away_stats[away_team]["D"] += 1
-
-            # 試合数を更新
-            team_home_stats[home_team]["Matches"] += 1
-            team_away_stats[away_team]["Matches"] += 1
-
-    return df
-
-
-# -------------------------
 # 4. ability of the teams that they have played against (Elo Ratings)
 # -------------------------
 
@@ -323,7 +323,7 @@ def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
 def add_team_stats(df, ratings_df, k):
     df = add_ratings(df, ratings_df)
     df = add_avg_ppg_stats(df)
-    df = add_shots_stats(df, k)
     df = add_wdl_rates(df)
+    df = add_shots_stats(df, k)
     df = add_elo_rating(df)
     return df

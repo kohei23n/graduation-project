@@ -43,6 +43,13 @@ features = [
     "AT_OverallR",
     "HT_AveragePPG",
     "AT_AveragePPG",
+    # Home Advantage
+    "HT_HomeWinRate",
+    "HT_HomeDrawRate",
+    "HT_HomeLossRate",
+    "AT_AwayWinRate",
+    "AT_AwayDrawRate",
+    "AT_AwayLossRate",
     # Recent Performance
     "HT_RecentShots",
     "HT_RecentSOT",
@@ -52,13 +59,6 @@ features = [
     "AT_RecentSOT",
     "AT_RecentShotsConceded",
     "AT_RecentSOTConceded",
-    # Home Advantage
-    "HT_HomeWinRate",
-    "HT_HomeDrawRate",
-    "HT_HomeLossRate",
-    "AT_AwayWinRate",
-    "AT_AwayDrawRate",
-    "AT_AwayLossRate",
     # Elo
     "HT_Elo",
     "AT_Elo",

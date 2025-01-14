@@ -5,7 +5,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
 # モデルを評価する関数
-def evaluate_model(model, X_train, y_test, y_pred):
+def evaluate_model(model, X_train, y_test, y_pred, label_encoder):
     # Accuracy 計算
     accuracy = accuracy_score(y_test, y_pred)
     print(f"\nAccuracy: {accuracy:.3f}")
@@ -18,7 +18,6 @@ def evaluate_model(model, X_train, y_test, y_pred):
     print(f"\nFeature Importance: {feature_importance}")
     
     # Confusion Matrix の作成
-    label_encoder = LabelEncoder
     conf_matrix = confusion_matrix(
         y_test, y_pred, labels=range(len(label_encoder.classes_))
     )
@@ -29,14 +28,16 @@ def evaluate_model(model, X_train, y_test, y_pred):
     )
     print(f"\nConfusion Matrix:")
     print(conf_matrix_df)
+    print(f"\nConfusion Matrix:")
+    print(conf_matrix_df)
     
     # Confusion Matrix のプロット
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(conf_matrix_df, annot=True, fmt="d", cmap="Blues", cbar=False)
-    plt.title(f"Confusion Matrix")
-    plt.xlabel("Predicted Labels")
-    plt.ylabel("True Labels")
-    plt.show()
+    # plt.figure(figsize=(8, 6))
+    # sns.heatmap(conf_matrix_df, annot=True, fmt="d", cmap="Blues", cbar=False)
+    # plt.title(f"Confusion Matrix")
+    # plt.xlabel("Predicted Labels")
+    # plt.ylabel("True Labels")
+    # plt.show()
 
     # Classification Report の生成
     report = classification_report(
@@ -52,10 +53,10 @@ def evaluate_model(model, X_train, y_test, y_pred):
     report_df = pd.DataFrame(report_dict).transpose()
 
     # Classification Report のプロット
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(report_df.iloc[:-3, :-1], annot=True, cmap="Blues", fmt=".3f")
-    plt.title(f"Classification Metrics")
-    plt.show()
+    # plt.figure(figsize=(8, 6))
+    # sns.heatmap(report_df.iloc[:-3, :-1], annot=True, cmap="Blues", fmt=".3f")
+    # plt.title(f"Classification Metrics")
+    # plt.show()
 
     return accuracy, feature_importance, conf_matrix_df, report_df
 
