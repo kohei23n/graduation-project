@@ -17,26 +17,26 @@ logging.info("Splitting data...")
 train_data, test_data = split_data(match_data_df)
 
 # K の最適化（一回でOK）
-logging.info("Running optimization for K with Random Forest...")
-best_k, best_log_loss, best_accuracy = optimise_k(
-    train_data, ratings_df, features, model_type="rf"
-)
+# logging.info("Running optimization for K with Random Forest...")
+# best_k, best_log_loss, best_accuracy = optimise_k(
+#     train_data, ratings_df, features, model_type="rf"
+# )
 
-logging.info(
-    f"(RF) Best k: {best_k}, Log Loss: {best_log_loss}, Accuracy: {best_accuracy}"
-)
+# logging.info(
+#     f"(RF) Best k: {best_k}, Log Loss: {best_log_loss}, Accuracy: {best_accuracy}"
+# )
 
 # # (RF) Best k: 3, Log Loss: 1.0061962760112702, Accuracy: 0.5139285714285714
 # # Updated: (RF) Best k: 5, Log Loss: 0.9993317628384265, Accuracy: 0.5253787878787879
 
-logging.info("Running optimization for K with Gradient Boosting...")
-best_k, best_log_loss, best_accuracy = optimise_k(
-    train_data, ratings_df, features, model_type="xgb"
-)
+# logging.info("Running optimization for K with Gradient Boosting...")
+# best_k, best_log_loss, best_accuracy = optimise_k(
+#     train_data, ratings_df, features, model_type="xgb"
+# )
 
-logging.info(
-    f"(GB) Best k: {best_k}, Log Loss: {best_log_loss}, Accuracy: {best_accuracy}"
-)
+# logging.info(
+#     f"(GB) Best k: {best_k}, Log Loss: {best_log_loss}, Accuracy: {best_accuracy}"
+# )
 
 # (GB) Best k: 5, Log Loss: 1.2136760862953202, Accuracy: 0.5018939393939394
 # Updated: (GB) Best k: 7, Log Loss: 1.2439276466838884, Accuracy: 0.494758064516129

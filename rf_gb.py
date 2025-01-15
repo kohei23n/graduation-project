@@ -82,3 +82,6 @@ xgb_feature_importance = evaluate_model(
 # (RF) Updated Accuracy: 0.571
 # (GB) Accuracy: 0.575
 # (GB) Updated Accuracy: 0.571
+
+print(f"(RF) Best Parameters: {rf_best_params}")
+print(f"(GB) Best Parameters: {xgb_best_params}")

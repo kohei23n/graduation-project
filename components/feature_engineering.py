@@ -372,7 +372,7 @@ def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
 # -------------------------
 
 
-def add_team_stats(df, ratings_df, xg_df, k):
+def add_team_stats(df, ratings_df, k):
     # ability
     df = add_ratings(df, ratings_df)
     df = add_avg_ppg_stats(df)
