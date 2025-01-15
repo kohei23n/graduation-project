@@ -367,75 +367,6 @@ def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
     return df
 
 
-
-# -------------------------
-# X. Bonus!
-# -------------------------
-
-# XGを足してみる（テスト！）
-def add_xg(df, xg_df):
-    # HomeTeam に対するマージ
-    df = df.merge(
-        xg_df[["HomeTeam", "HomeXG", "Season"]], on=["HomeTeam", "Season"], how="left"
-    )
-
-    # AwayTeam に対するマージ
-    df = df.merge(
-        xg_df[["AwayTeam", "AwayXG", "Season"]], on=["AwayTeam", "Season"], how="left"
-    )
-    return df
-
-
-def calc_xg_stats(team, date, df, k=None):
-    past_matches = get_past_matches(team, date, df, k=k)
-
-    if past_matches.empty or (k is not None and len(past_matches) < k):
-        return np.nan
-
-    xg = []
-
-    for _, match in past_matches.iterrows():
-        if match["HomeTeam"] == team:
-            xg.append(match["HomeXG"], "home")
-        else:
-            xg.append(match["AwayXG"], "away")
-
-    return np.nanmean(xg) if xg else np.nan
-
-
-## 過去k試合の平均ポイントを計算する関数
-def add_recent_xg_stats(df, k):
-    df["HT_RecentXG"] = 0.0
-    df["AT_RecentXG"] = 0.0
-
-    for _, row in df.iterrows():
-        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
-
-        # ホームチームの直近 k 試合の平均ポイント
-        df.at[_, "HT_RecentXG"] = calc_xg_stats(home_team, date, df, k)
-
-        # アウェイチームの直近 k 試合の平均ポイント
-        df.at[_, "AT_RecentXG"] = calc_xg_stats(away_team, date, df, k)
-
-    return df
-
-
-## シーズンごとの累積平均ポイントを計算する関数
-def add_avg_xg_stats(df):
-    df["HT_AvgXG"] = 0.0
-    df["AT_AvgXG"] = 0.0
-
-    for _, row in df.iterrows():
-        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
-
-        # ホームチームの累積平均ポイント
-        df.at[_, "HT_AvgXG"] = calc_xg_stats(home_team, date, df, k=None)
-
-        # アウェイチームの累積平均ポイント
-        df.at[_, "AT_AvgXG"] = calc_xg_stats(away_team, date, df, k=None)
-
-    return df
-
 # -------------------------
 # 5. combine all features into a single function
 # -------------------------
@@ -453,7 +384,4 @@ def add_team_stats(df, ratings_df, xg_df, k):
     df = add_recent_ppg_stats(df, k)
     # ability of opposition
     df = add_elo_rating(df)
-    # test
-    df = add_xg(df, xg_df)
-    df = add_recent_xg_stats(df, k)
     return df
