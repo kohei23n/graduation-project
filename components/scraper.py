@@ -53,7 +53,9 @@ for url, season in zip(urls, seasons):
 df = pd.DataFrame(all_data)
 
 # Rename the 'Name' column to 'Team'
-df.rename(columns={'Name': 'Team'}, inplace=True)
+df.rename(columns={
+    'Name': 'Team', 
+}, inplace=True)
 
 # Define the replacements as a dictionary
 replacements = {

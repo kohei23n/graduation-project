@@ -26,7 +26,8 @@ logging.info(
     f"(RF) Best k: {best_k}, Log Loss: {best_log_loss}, Accuracy: {best_accuracy}"
 )
 
-# (RF) Best k: 3, Log Loss: 1.0061962760112702, Accuracy: 0.5139285714285714
+# # (RF) Best k: 3, Log Loss: 1.0061962760112702, Accuracy: 0.5139285714285714
+# # Updated: (RF) Best k: 5, Log Loss: 0.9993317628384265, Accuracy: 0.5253787878787879
 
 logging.info("Running optimization for K with Gradient Boosting...")
 best_k, best_log_loss, best_accuracy = optimise_k(
@@ -38,19 +39,20 @@ logging.info(
 )
 
 # (GB) Best k: 5, Log Loss: 1.2136760862953202, Accuracy: 0.5018939393939394
+# Updated: (GB) Best k: 7, Log Loss: 1.2439276466838884, Accuracy: 0.494758064516129
 
 # 最終的な特徴量生成
-logging.info("Generating final engineered data with k=4")
+logging.info("Generating final engineered data with k=6")
 
-train_data = add_team_stats(train_data, ratings_df, k=4)
-test_data = add_team_stats(test_data, ratings_df, k=4)
+train_data = add_team_stats(train_data, ratings_df, k=6)
+test_data = add_team_stats(test_data, ratings_df, k=6)
 
 # 最適なkを用いて各シーズンの最初のk試合を除外
-train_data = remove_first_k_gameweeks(train_data, k=4)
-test_data = remove_first_k_gameweeks(test_data, k=4)
+train_data = remove_first_k_gameweeks(train_data, k=6)
+test_data = remove_first_k_gameweeks(test_data, k=6)
 
 # 不要なカラムを削除
-required_columns = features + ["Season", "FTR"]
+required_columns = ["HomeTeam", "AwayTeam"] + features + ["Season", "FTR"]
 train_data = train_data[required_columns]
 test_data = test_data[required_columns]
 

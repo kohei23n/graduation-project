@@ -52,14 +52,14 @@ def add_ratings(df, ratings_df):
 def get_past_matches(team, date, df, k=None):
     # 試合の日付に基づいて、シーズンを取得
     season = df.loc[df["Date"] == date, "Season"].values[0]
-    
+
     # 該当するシーズン内の、指定した試合より前の試合データを取得
     past_matches = df[
         ((df["HomeTeam"] == team) | (df["AwayTeam"] == team))
         & (df["Date"] < date)
         & (df["Season"] == season)
     ].sort_values(by="Date", ascending=False)
-    
+
     # k が指定されていない場合、全試合を返す
     if k is None:
         return past_matches
@@ -80,18 +80,18 @@ def calc_points(result, team_type):
 
 def calc_points_stats(team, date, df, k=None):
     past_matches = get_past_matches(team, date, df, k=k)
-    
-    if k is not None and len(past_matches) < k:
-        return 0
+
+    if past_matches.empty or (k is not None and len(past_matches) < k):
+        return np.nan
 
     points = []
-    
+
     for _, match in past_matches.iterrows():
         if match["HomeTeam"] == team:
             points.append(calc_points(match["FTR"], "home"))
         else:
             points.append(calc_points(match["FTR"], "away"))
-    
+
     return np.mean(points)
 
 
@@ -111,6 +111,7 @@ def add_recent_ppg_stats(df, k):
 
     return df
 
+
 ## シーズンごとの累積平均ポイントを計算する関数
 def add_avg_ppg_stats(df):
     df["HT_AvgPPG"] = 0.0
@@ -126,6 +127,7 @@ def add_avg_ppg_stats(df):
         df.at[_, "AT_AvgPPG"] = calc_points_stats(away_team, date, df, k=None)
 
     return df
+
 
 # -------------------------
 # 2. home advantage (W, D, L %)
@@ -208,7 +210,7 @@ def add_wdl_rates(df):
 def calc_shots_stats(team, date, df, k=None):
     past_matches = get_past_matches(team, date, df, k)
 
-    if k is not None and len(past_matches) < k:
+    if past_matches.empty or (k is not None and len(past_matches) < k):
         return np.nan, np.nan, np.nan, np.nan
 
     shots = []
@@ -288,8 +290,8 @@ def add_avg_shots_stats(df):
         home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
 
         # ホームチームの全試合平均
-        ht_avg_shots, ht_avg_sot, ht_avg_shots_conceded, ht_avg_sot_conceded = calc_shots_stats(
-            home_team, date, df, k=None
+        ht_avg_shots, ht_avg_sot, ht_avg_shots_conceded, ht_avg_sot_conceded = (
+            calc_shots_stats(home_team, date, df, k=None)
         )
         team_stats["HT_AvgShots"].append(ht_avg_shots)
         team_stats["HT_AvgSOT"].append(ht_avg_sot)
@@ -297,8 +299,8 @@ def add_avg_shots_stats(df):
         team_stats["HT_AvgSOTConceded"].append(ht_avg_sot_conceded)
 
         # アウェイチームの全試合平均
-        at_avg_shots, at_avg_sot, at_avg_shots_conceded, at_avg_sot_conceded = calc_shots_stats(
-            away_team, date, df, k=None
+        at_avg_shots, at_avg_sot, at_avg_shots_conceded, at_avg_sot_conceded = (
+            calc_shots_stats(away_team, date, df, k=None)
         )
         team_stats["AT_AvgShots"].append(at_avg_shots)
         team_stats["AT_AvgSOT"].append(at_avg_sot)
@@ -365,12 +367,81 @@ def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
     return df
 
 
+
+# -------------------------
+# X. Bonus!
+# -------------------------
+
+# XGを足してみる（テスト！）
+def add_xg(df, xg_df):
+    # HomeTeam に対するマージ
+    df = df.merge(
+        xg_df[["HomeTeam", "HomeXG", "Season"]], on=["HomeTeam", "Season"], how="left"
+    )
+
+    # AwayTeam に対するマージ
+    df = df.merge(
+        xg_df[["AwayTeam", "AwayXG", "Season"]], on=["AwayTeam", "Season"], how="left"
+    )
+    return df
+
+
+def calc_xg_stats(team, date, df, k=None):
+    past_matches = get_past_matches(team, date, df, k=k)
+
+    if past_matches.empty or (k is not None and len(past_matches) < k):
+        return np.nan
+
+    xg = []
+
+    for _, match in past_matches.iterrows():
+        if match["HomeTeam"] == team:
+            xg.append(match["HomeXG"], "home")
+        else:
+            xg.append(match["AwayXG"], "away")
+
+    return np.nanmean(xg) if xg else np.nan
+
+
+## 過去k試合の平均ポイントを計算する関数
+def add_recent_xg_stats(df, k):
+    df["HT_RecentXG"] = 0.0
+    df["AT_RecentXG"] = 0.0
+
+    for _, row in df.iterrows():
+        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
+
+        # ホームチームの直近 k 試合の平均ポイント
+        df.at[_, "HT_RecentXG"] = calc_xg_stats(home_team, date, df, k)
+
+        # アウェイチームの直近 k 試合の平均ポイント
+        df.at[_, "AT_RecentXG"] = calc_xg_stats(away_team, date, df, k)
+
+    return df
+
+
+## シーズンごとの累積平均ポイントを計算する関数
+def add_avg_xg_stats(df):
+    df["HT_AvgXG"] = 0.0
+    df["AT_AvgXG"] = 0.0
+
+    for _, row in df.iterrows():
+        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
+
+        # ホームチームの累積平均ポイント
+        df.at[_, "HT_AvgXG"] = calc_xg_stats(home_team, date, df, k=None)
+
+        # アウェイチームの累積平均ポイント
+        df.at[_, "AT_AvgXG"] = calc_xg_stats(away_team, date, df, k=None)
+
+    return df
+
 # -------------------------
 # 5. combine all features into a single function
 # -------------------------
 
 
-def add_team_stats(df, ratings_df, k):
+def add_team_stats(df, ratings_df, xg_df, k):
     # ability
     df = add_ratings(df, ratings_df)
     df = add_avg_ppg_stats(df)
@@ -382,4 +453,7 @@ def add_team_stats(df, ratings_df, k):
     df = add_recent_ppg_stats(df, k)
     # ability of opposition
     df = add_elo_rating(df)
+    # test
+    df = add_xg(df, xg_df)
+    df = add_recent_xg_stats(df, k)
     return df

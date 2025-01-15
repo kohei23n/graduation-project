@@ -25,45 +25,45 @@ X_test = test_data[features]
 y_test = label_encoder.transform(test_data["FTR"])
 
 # チューニングの実行
-# logging.info("Tuning hyperparameters for Random Forest...")
-# rf_best_model, rf_best_params = tune_hyperparameters(X_train, y_train, model_type="rf")
+logging.info("Tuning hyperparameters for Random Forest...")
+rf_best_model, rf_best_params = tune_hyperparameters(X_train, y_train, model_type="rf")
 
-# logging.info("Tuning hyperparameters for Gradient Boosting...")
-# xgb_best_model, xgb_best_params = tune_hyperparameters(
-#     X_train, y_train, model_type="xgb"
-# )
+logging.info("Tuning hyperparameters for Gradient Boosting...")
+xgb_best_model, xgb_best_params = tune_hyperparameters(
+    X_train, y_train, model_type="xgb"
+)
 
-# print(f"(RF) Best Parameters: {rf_best_params}")
-# print(f"(GB) Best Parameters: {xgb_best_params}")
+print(f"(RF) Best Parameters: {rf_best_params}")
+print(f"(GB) Best Parameters: {xgb_best_params}")
 
-rf_best_params = {
-    "criterion": "entropy",
-    "max_depth": 10,
-    "max_features": "log2",
-    "min_samples_leaf": 4,
-    "min_samples_split": 2,
-    "n_estimators": 1700,
-}
+# rf_best_params = {
+#     "criterion": "entropy",
+#     "max_depth": 10,
+#     "max_features": "log2",
+#     "min_samples_leaf": 4,
+#     "min_samples_split": 2,
+#     "n_estimators": 1700,
+# }
 
-xgb_best_params = {
-    "colsample_bytree": 0.7,
-    "gamma": 0.09000000000000001,
-    "learning_rate": 0.060000000000000005,
-    "max_depth": 1,
-    "min_child_weight": 8,
-    "reg_alpha": 0.051000000000000004,
-    "subsample": 0.7000000000000001,
-}
+# xgb_best_params = {
+#     "colsample_bytree": 0.7,
+#     "gamma": 0.09000000000000001,
+#     "learning_rate": 0.060000000000000005,
+#     "max_depth": 1,
+#     "min_child_weight": 8,
+#     "reg_alpha": 0.051000000000000004,
+#     "subsample": 0.7000000000000001,
+# }
 
 # 最適なパラメータでモデルを構築
 logging.info("Training Random Forest model with best parameters...")
-rf_model = RandomForestClassifier(**rf_best_params)
+rf_model = RandomForestClassifier(**rf_best_params, random_state=42)
 rf_model.fit(X_train, y_train)
 rf_y_pred = rf_model.predict(X_test)
 logging.info("Done.")
 
 logging.info("Training Gradient Boosting model with best parameters...")
-xgb_model = xgb.XGBClassifier(**xgb_best_params)
+xgb_model = xgb.XGBClassifier(**xgb_best_params ,random_state=42)
 xgb_model.fit(X_train, y_train)
 xgb_y_pred = xgb_model.predict(X_test)
 logging.info("Done.")
@@ -77,3 +77,8 @@ logging.info("Evaluating Gradient Boosting model...")
 xgb_feature_importance = evaluate_model(
     xgb_model, X_train, y_test, xgb_y_pred, label_encoder
 )
+
+# (RF) Accuracy: 0.569
+# (RF) Updated Accuracy: 0.571
+# (GB) Accuracy: 0.575
+# (GB) Updated Accuracy: 0.571

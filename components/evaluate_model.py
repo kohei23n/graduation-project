@@ -28,8 +28,6 @@ def evaluate_model(model, X_train, y_test, y_pred, label_encoder):
     )
     print(f"\nConfusion Matrix:")
     print(conf_matrix_df)
-    print(f"\nConfusion Matrix:")
-    print(conf_matrix_df)
     
     # Confusion Matrix のプロット
     # plt.figure(figsize=(8, 6))
