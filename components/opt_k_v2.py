@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 import logging
 from sklearn.preprocessing import LabelEncoder
@@ -32,8 +31,10 @@ def optimise_k(train_data, features, model_type, params=None):
             temp_train_data = temp_data.iloc[train_idx].copy()
             temp_val_data = temp_data.iloc[val_idx].copy()
 
+            logging.info("Adding team stats...")
             temp_train_data = add_team_stats(temp_train_data, k)
             temp_val_data = add_team_stats(temp_val_data, k)
+            logging.info("Team stats added successfully.")
 
             X_train = temp_train_data[features]
             y_train = label_encoder.fit_transform(temp_train_data["FTR"])
@@ -49,12 +50,16 @@ def optimise_k(train_data, features, model_type, params=None):
             else:
                 raise ValueError("Unsupported model type")
 
+            logging.info("Fitting model...")
             model.fit(X_train, y_train)
+            logging.info("Model fitted successfully.")
 
+            logging.info("Predicting on validation set...")
             y_probs = model.predict_proba(X_val)
             current_log_loss = log_loss(y_val, y_probs)
             y_pred = model.predict(X_val)
             acc_score = accuracy_score(y_val, y_pred)
+            logging.info("Predictions made successfully.")
 
             log_losses.append(current_log_loss)
             accuracy_scores.append(acc_score)

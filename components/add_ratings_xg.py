@@ -1,18 +1,17 @@
 import logging
 import pandas as pd
+from common_v2 import load_and_format_date
 
 # 進捗状況を表示するための設定
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 
 # データの読み込みと準備
-logging.info("Loading and preparing data...")
-match_data_df = pd.read_csv("./csv/match_data.csv")
-match_data_df["Date"] = pd.to_datetime(
-    match_data_df["Date"], format="%d/%m/%Y", dayfirst=True
-)
+logging.info("Loading and formatting data...")
+match_data_df = load_and_format_date("./csv/match_data.csv")
 ratings_df = pd.read_csv("./csv/ratings_data.csv")
 xg_df = pd.read_csv("./csv/xg_data.csv")
 logging.info("Data loaded successfully.")
+
 
 # -------------------------
 # 1. Add Ratings
@@ -51,33 +50,30 @@ def add_ratings(df, ratings_df):
     )
     return df
 
-
 logging.info("Adding ratings to match data...")
 match_data_df = add_ratings(match_data_df, ratings_df)
 logging.info("Ratings added successfully.")
+
 
 # -------------------------
 # 2. Add xG
 # -------------------------
 
 
-# XGを足してみる（テスト！）
 def add_xg(df, xg_df):
-    # HomeTeam に対するマージ
     df = df.merge(
-        xg_df[["HomeTeam", "HomeXG", "Season"]], on=["HomeTeam", "Season"], how="left"
-    )
-
-    # AwayTeam に対するマージ
-    df = df.merge(
-        xg_df[["AwayTeam", "AwayXG", "Season"]], on=["AwayTeam", "Season"], how="left"
+        xg_df[["HomeTeam", "AwayTeam", "Season", "HomeXG", "AwayXG"]],
+        on=["HomeTeam", "AwayTeam", "Season"],
+        how="left",
     )
     return df
 
 
+print("Original rows:", len(match_data_df))
 logging.info("Adding xG to match data...")
 match_data_df = add_xg(match_data_df, xg_df)
 logging.info("xG added successfully.")
+print("Rows after ratings:", len(match_data_df))
 
 # 不要なカラムを削除
 logging.info("Removing unnecessary columns...")
@@ -103,6 +99,8 @@ required_columns = [
     "AT_MidfieldR",
     "AT_DefenceR",
     "AT_OverallR",
+    "HomeXG",
+    "AwayXG",
     "B365H",
     "B365D",
     "B365A",

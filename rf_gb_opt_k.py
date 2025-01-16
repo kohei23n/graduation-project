@@ -26,8 +26,8 @@ train_data, test_data = split_data(match_data_df)
 #     f"(RF) Best k: {best_k}, Log Loss: {best_log_loss}, Accuracy: {best_accuracy}"
 # )
 
-# # (RF) Best k: 3, Log Loss: 1.0061962760112702, Accuracy: 0.5139285714285714
-# # Updated: (RF) Best k: 5, Log Loss: 0.9993317628384265, Accuracy: 0.5253787878787879
+# # Best k: 3, Log Loss: 1.0061962760112702, Accuracy: 0.5139285714285714
+# # Best k (after adding AvgShots/SOT & RecentPPG): 5, Log Loss: 0.9993317628384265, Accuracy: 0.5253787878787879
 
 # logging.info("Running optimization for K with Gradient Boosting...")
 # best_k, best_log_loss, best_accuracy = optimise_k(
@@ -38,8 +38,8 @@ train_data, test_data = split_data(match_data_df)
 #     f"(GB) Best k: {best_k}, Log Loss: {best_log_loss}, Accuracy: {best_accuracy}"
 # )
 
-# (GB) Best k: 5, Log Loss: 1.2136760862953202, Accuracy: 0.5018939393939394
-# Updated: (GB) Best k: 7, Log Loss: 1.2439276466838884, Accuracy: 0.494758064516129
+# Best k: 5, Log Loss: 1.2136760862953202, Accuracy: 0.5018939393939394
+# Best k (after adding AvgShots/SOT & RecentPPG): 7, Log Loss: 1.2439276466838884, Accuracy: 0.494758064516129
 
 # 最終的な特徴量生成
 logging.info("Generating final engineered data with k=6")
