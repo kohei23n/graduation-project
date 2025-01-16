@@ -1,52 +1,5 @@
 import numpy as np
-import pandas as pd
-from components.common import load_and_prepare_data
-
-# データの読み込みと準備
-match_data_df, ratings_df = load_and_prepare_data(
-    "./csv/match_data.csv", "./csv/ratings_data.csv"
-)
-
-# -------------------------
-# 1. the different abilities of both teams (FIFA Ratings, Average Points)
-# -------------------------
-
-
-# Ratings を試合データに結合する関数
-def add_ratings(df, ratings_df):
-    df = (
-        df.merge(
-            ratings_df, left_on=["HomeTeam", "Season"], right_on=["Team", "Season"]
-        )
-        .rename(
-            columns={
-                "ATT": "HT_AttackR",
-                "MID": "HT_MidfieldR",
-                "DEF": "HT_DefenceR",
-                "OVR": "HT_OverallR",
-            }
-        )
-        .drop(columns=["Team"])
-    )
-    df = (
-        df.merge(
-            ratings_df, left_on=["AwayTeam", "Season"], right_on=["Team", "Season"]
-        )
-        .rename(
-            columns={
-                "ATT": "AT_AttackR",
-                "MID": "AT_MidfieldR",
-                "DEF": "AT_DefenceR",
-                "OVR": "AT_OverallR",
-            }
-        )
-        .drop(columns=["Team"])
-    )
-    return df
-
-
-# Average Points
-
+import logging
 
 ## チームの過去の試合データを取得する関数
 def get_past_matches(team, date, df, k=None):
@@ -60,13 +13,15 @@ def get_past_matches(team, date, df, k=None):
         & (df["Season"] == season)
     ].sort_values(by="Date", ascending=False)
 
-    # k が指定されていない場合、全試合を返す
-    if k is None:
-        return past_matches
-
     # past matches のうち、直近 k 試合分のデータのみ取得
-    return past_matches.head(k)
+    return past_matches.head(k) if k else past_matches
 
+
+# -------------------------
+# 1. the different abilities of both teams
+# -------------------------
+
+# Average Points
 
 ## 試合結果をポイントに変換する関数
 ### c("H", "home") or c("A", "away") → 3 / c("D", "away" or "home") → 1 / c("H", "away") or c("A", "home") → 0
@@ -97,112 +52,93 @@ def calc_points_stats(team, date, df, k=None):
 
 ## 過去k試合の平均ポイントを計算する関数
 def add_recent_ppg_stats(df, k):
-    df["HT_RecentPPG"] = 0.0
-    df["AT_RecentPPG"] = 0.0
-
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
 
-        # ホームチームの直近 k 試合の平均ポイント
-        df.at[_, "HT_RecentPPG"] = calc_points_stats(home_team, date, df, k)
-
-        # アウェイチームの直近 k 試合の平均ポイント
-        df.at[_, "AT_RecentPPG"] = calc_points_stats(away_team, date, df, k)
+        # ホームチームとアウェイチームの直近 k 試合の平均ポイントを計算
+        df.at[idx, "HT_RecentPPG"] = calc_points_stats(home_team, date, df, k)
+        df.at[idx, "AT_RecentPPG"] = calc_points_stats(away_team, date, df, k)
 
     return df
 
 
 ## シーズンごとの累積平均ポイントを計算する関数
 def add_avg_ppg_stats(df):
-    df["HT_AvgPPG"] = 0.0
-    df["AT_AvgPPG"] = 0.0
-
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
 
-        # ホームチームの累積平均ポイント
-        df.at[_, "HT_AvgPPG"] = calc_points_stats(home_team, date, df, k=None)
-
-        # アウェイチームの累積平均ポイント
-        df.at[_, "AT_AvgPPG"] = calc_points_stats(away_team, date, df, k=None)
+        # ホームチームとアウェイチームの直近 k 試合の平均ポイントを計算
+        df.at[idx, "HT_AvgPPG"] = calc_points_stats(home_team, date, df)
+        df.at[idx, "AT_AvgPPG"] = calc_points_stats(away_team, date, df)
 
     return df
 
 
 # -------------------------
-# 2. home advantage (W, D, L %)
+# 2. home advantage
 # -------------------------
+
+def calc_wdl_rates(team, date, df, k=None):
+    past_matches = get_past_matches(team, date, df, k=k)
+
+    if past_matches.empty or (k is not None and len(past_matches) < k):
+        return np.nan, np.nan, np.nan
+    
+    wins, draws, losses = 0, 0, 0
+    
+    for _, match in past_matches.iterrows():
+        if match["HomeTeam"] == team:
+            if match["FTR"] == "H":
+                wins += 1
+            elif match["FTR"] == "D":
+                draws += 1
+            else:
+                losses += 1
+        else:
+            if match["FTR"] == "A":
+                wins += 1
+            elif match["FTR"] == "D":
+                draws += 1
+            else:
+                losses += 1
+                
+    total_matches = len(past_matches)
+    
+    return wins / total_matches, draws / total_matches, losses / total_matches
 
 
 ## シーズンごとの累積平均ポイントを計算する関数
 def add_wdl_rates(df):
-    df["HT_HomeWinRate"] = 0.0
-    df["HT_HomeDrawRate"] = 0.0
-    df["HT_HomeLossRate"] = 0.0
-    df["AT_AwayWinRate"] = 0.0
-    df["AT_AwayDrawRate"] = 0.0
-    df["AT_AwayLossRate"] = 0.0
+    wdl_stats = {
+        "HT_HomeWinRate": [],
+        "HT_HomeDrawRate": [],
+        "HT_HomeLossRate": [],
+        "AT_AwayWinRate": [],
+        "AT_AwayDrawRate": [],
+        "AT_AwayLossRate": [],
+    }
+    
+    for _, row in df.iterrows():
+        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
+        
+        home_win_rate, home_draw_rate, home_loss_rate = calc_wdl_rates(home_team, date, df)
+        wdl_stats["HT_HomeWinRate"].append(home_win_rate)
+        wdl_stats["HT_HomeDrawRate"].append(home_draw_rate)
+        wdl_stats["HT_HomeLossRate"].append(home_loss_rate)
+        
+        away_win_rate, away_draw_rate, away_loss_rate = calc_wdl_rates(away_team, date, df)
+        wdl_stats["AT_AwayWinRate"].append(away_win_rate)
+        wdl_stats["AT_AwayDrawRate"].append(away_draw_rate)
+        wdl_stats["AT_AwayLossRate"].append(away_loss_rate)
 
-    # シーズンごとにデータを処理
-    for season in df["Season"].unique():
-        season_data = df[df["Season"] == season]
-        teams = set(season_data["HomeTeam"]).union(season_data["AwayTeam"])
-
-        # チームごとの累積試合結果（ホーム、アウェイ別）を初期化
-        team_home_stats = {
-            team: {"W": 0, "D": 0, "L": 0, "Matches": 0} for team in teams
-        }
-        team_away_stats = {
-            team: {"W": 0, "D": 0, "L": 0, "Matches": 0} for team in teams
-        }
-
-        # 各試合を順に処理
-        for idx, row in season_data.iterrows():
-            home_team, away_team = row["HomeTeam"], row["AwayTeam"]
-            result = row["FTR"]
-
-            # ホームチームの勝率、引き分け率、負け率を計算（試合前の値を使用）
-            matches = team_home_stats[home_team]["Matches"]
-            if matches > 0:
-                df.at[idx, "HT_HomeWinRate"] = team_home_stats[home_team]["W"] / matches
-                df.at[idx, "HT_HomeDrawRate"] = (
-                    team_home_stats[home_team]["D"] / matches
-                )
-                df.at[idx, "HT_HomeLossRate"] = (
-                    team_home_stats[home_team]["L"] / matches
-                )
-
-            # アウェイチームの勝率、引き分け率、負け率を計算（試合前の値を使用）
-            matches = team_away_stats[away_team]["Matches"]
-            if matches > 0:
-                df.at[idx, "AT_AwayWinRate"] = team_away_stats[away_team]["W"] / matches
-                df.at[idx, "AT_AwayDrawRate"] = (
-                    team_away_stats[away_team]["D"] / matches
-                )
-                df.at[idx, "AT_AwayLossRate"] = (
-                    team_away_stats[away_team]["L"] / matches
-                )
-
-            # 試合後の結果を累積に更新
-            if result == "H":  # ホーム勝ち
-                team_home_stats[home_team]["W"] += 1
-                team_away_stats[away_team]["L"] += 1
-            elif result == "A":  # アウェイ勝ち
-                team_home_stats[home_team]["L"] += 1
-                team_away_stats[away_team]["W"] += 1
-            else:  # 引き分け
-                team_home_stats[home_team]["D"] += 1
-                team_away_stats[away_team]["D"] += 1
-
-            # 試合数を更新
-            team_home_stats[home_team]["Matches"] += 1
-            team_away_stats[away_team]["Matches"] += 1
+    for col, values in wdl_stats.items():
+        df[col] = values
 
     return df
 
 
 # -------------------------
-# 3. recent performance (直近 k 試合の Shots, SOT, Shots Conceded, SOT Conceded)
+# 3. recent performance
 # -------------------------
 
 
@@ -213,10 +149,7 @@ def calc_shots_stats(team, date, df, k=None):
     if past_matches.empty or (k is not None and len(past_matches) < k):
         return np.nan, np.nan, np.nan, np.nan
 
-    shots = []
-    sot = []
-    shots_conceded = []
-    sot_conceded = []
+    shots, sot, shots_conceded, sot_conceded = [], [], [], []
 
     for _, match in past_matches.iterrows():
         if match["HomeTeam"] == team:
@@ -235,7 +168,7 @@ def calc_shots_stats(team, date, df, k=None):
 
 ## データフレームにShots, SOT, Shots Conceded, SOT Concededに関する統計を追加。
 def add_recent_shots_stats(df, k):
-    team_stats = {
+    recent_shots_stats = {
         "HT_RecentShots": [],
         "HT_RecentSOT": [],
         "HT_RecentShotsConceded": [],
@@ -253,21 +186,21 @@ def add_recent_shots_stats(df, k):
         ht_shots, ht_sot, ht_shots_conceded, ht_sot_conceded = calc_shots_stats(
             home_team, date, df, k
         )
-        team_stats["HT_RecentShots"].append(ht_shots)
-        team_stats["HT_RecentSOT"].append(ht_sot)
-        team_stats["HT_RecentShotsConceded"].append(ht_shots_conceded)
-        team_stats["HT_RecentSOTConceded"].append(ht_sot_conceded)
+        recent_shots_stats["HT_RecentShots"].append(ht_shots)
+        recent_shots_stats["HT_RecentSOT"].append(ht_sot)
+        recent_shots_stats["HT_RecentShotsConceded"].append(ht_shots_conceded)
+        recent_shots_stats["HT_RecentSOTConceded"].append(ht_sot_conceded)
 
         # アウェイチームの統計
         at_shots, at_sot, at_shots_conceded, at_sot_conceded = calc_shots_stats(
             away_team, date, df, k
         )
-        team_stats["AT_RecentShots"].append(at_shots)
-        team_stats["AT_RecentSOT"].append(at_sot)
-        team_stats["AT_RecentShotsConceded"].append(at_shots_conceded)
-        team_stats["AT_RecentSOTConceded"].append(at_sot_conceded)
+        recent_shots_stats["AT_RecentShots"].append(at_shots)
+        recent_shots_stats["AT_RecentSOT"].append(at_sot)
+        recent_shots_stats["AT_RecentShotsConceded"].append(at_shots_conceded)
+        recent_shots_stats["AT_RecentSOTConceded"].append(at_sot_conceded)
 
-    for col, values in team_stats.items():
+    for col, values in recent_shots_stats.items():
         df[col] = values
 
     return df
@@ -275,7 +208,7 @@ def add_recent_shots_stats(df, k):
 
 # AVG Shots, SOT, Shots Conceded, SOT Conceded in Season
 def add_avg_shots_stats(df):
-    team_stats = {
+    avg_shots_stats = {
         "HT_AvgShots": [],
         "HT_AvgSOT": [],
         "HT_AvgShotsConceded": [],
@@ -293,76 +226,144 @@ def add_avg_shots_stats(df):
         ht_avg_shots, ht_avg_sot, ht_avg_shots_conceded, ht_avg_sot_conceded = (
             calc_shots_stats(home_team, date, df, k=None)
         )
-        team_stats["HT_AvgShots"].append(ht_avg_shots)
-        team_stats["HT_AvgSOT"].append(ht_avg_sot)
-        team_stats["HT_AvgShotsConceded"].append(ht_avg_shots_conceded)
-        team_stats["HT_AvgSOTConceded"].append(ht_avg_sot_conceded)
+        avg_shots_stats["HT_AvgShots"].append(ht_avg_shots)
+        avg_shots_stats["HT_AvgSOT"].append(ht_avg_sot)
+        avg_shots_stats["HT_AvgShotsConceded"].append(ht_avg_shots_conceded)
+        avg_shots_stats["HT_AvgSOTConceded"].append(ht_avg_sot_conceded)
 
         # アウェイチームの全試合平均
         at_avg_shots, at_avg_sot, at_avg_shots_conceded, at_avg_sot_conceded = (
             calc_shots_stats(away_team, date, df, k=None)
         )
-        team_stats["AT_AvgShots"].append(at_avg_shots)
-        team_stats["AT_AvgSOT"].append(at_avg_sot)
-        team_stats["AT_AvgShotsConceded"].append(at_avg_shots_conceded)
-        team_stats["AT_AvgSOTConceded"].append(at_avg_sot_conceded)
+        avg_shots_stats["AT_AvgShots"].append(at_avg_shots)
+        avg_shots_stats["AT_AvgSOT"].append(at_avg_sot)
+        avg_shots_stats["AT_AvgShotsConceded"].append(at_avg_shots_conceded)
+        avg_shots_stats["AT_AvgSOTConceded"].append(at_avg_sot_conceded)
 
-    for col, values in team_stats.items():
+    for col, values in avg_shots_stats.items():
         df[col] = values
 
     return df
 
 
 # -------------------------
-# 4. ability of opposition (Elo Ratings)
+# 4. ability of opposition
+# -------------------------
+
+def calc_elo_rating(team, date, df, initial_rating=1000, k=20, c=10, d=400):
+    past_matches = get_past_matches(team, date, df)
+
+    if past_matches.empty:
+        return initial_rating
+
+    elo = initial_rating
+
+    for _, match in past_matches.iterrows():
+        if match["HomeTeam"] == team:
+            opponent = match["AwayTeam"]
+            opponent_elo = match["AT_Elo"]
+            result = (
+                1 if match["FTR"] == "H" 
+                else 0.5 if match["FTR"] == "D" 
+                else 0
+            )
+        else:
+            opponent = match["HomeTeam"]
+            opponent_elo = match["HT_Elo"]
+            result = (
+                1 if match["FTR"] == "A"
+                else 0.5 if match["FTR"] == "D"
+                else 0
+            )
+
+        expected_score = 1 / (1 + c ** ((opponent_elo - elo) / d))
+        elo += k * (result - expected_score)
+
+    return elo
+
+
+def add_elo_stats(df):
+    for idx, row in df.iterrows():
+        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
+
+        df.at[idx, "HT_Elo"] = calc_elo_rating(home_team, date, df)
+        df.at[idx, "AT_Elo"] = calc_elo_rating(away_team, date, df)
+
+    return df
+
+
+# -------------------------
+# X. Bonus!
 # -------------------------
 
 
-def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
+def calc_xg_stats(team, date, df, k=None):
+    past_matches = get_past_matches(team, date, df, k=k)
 
-    df["HT_Elo"] = 0.0
-    df["AT_Elo"] = 0.0
+    if past_matches.empty or (k is not None and len(past_matches) < k):
+        return np.nan, np.nan
 
-    ## シーズンごとにループ
-    for season in df["Season"].unique():
-        # シーズンごとのデータを取得
-        season_data = df[df["Season"] == season]
+    xg, xg_conceded = [], []
 
-        # シーズン内のチームとその初期レーティングを設定
-        teams = set(season_data["HomeTeam"]).union(season_data["AwayTeam"])
-        team_elo = {team: initial_rating for team in teams}
+    for _, match in past_matches.iterrows():
+        if match["HomeTeam"] == team:
+            xg.append(match["HomeXG"])
+            xg_conceded.append(match["AwayXG"])
+        else:
+            xg.append(match["AwayXG"])
+            xg_conceded.append(match["HomeXG"])
 
-        home_elo_ratings, away_elo_ratings = [], []
+    return np.mean(xg), np.mean(xg_conceded)
 
-        # 試合ごとにEloを計算
-        for idx, row in season_data.iterrows():
-            home_team = row["HomeTeam"]
-            away_team = row["AwayTeam"]
-            result = row["FTR"]
 
-            home_elo_ratings.append(float(team_elo[home_team]))
-            away_elo_ratings.append(float(team_elo[away_team]))
+## 過去k試合の平均ポイントを計算する関数
+def add_recent_xg_stats(df, k):
+    recent_xg_stats = {
+        "HT_RecentXG": [],
+        "HT_RecentXGConceded": [],
+        "AT_RecentXG": [],
+        "AT_RecentXGConceded": [],
+    }
 
-            if result == "H":
-                result_home = 1
-            elif result == "D":
-                result_home = 0.5
-            else:
-                result_home = 0
+    for _, row in df.iterrows():
+        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
 
-            expected_home = 1 / (
-                1 + c ** ((team_elo[away_team] - team_elo[home_team]) / d)
-            )
-            expected_away = 1 - expected_home
+        ht_xg, ht_xg_conceded = calc_xg_stats(home_team, date, df, k)
+        recent_xg_stats["HT_RecentXG"].append(ht_xg)
+        recent_xg_stats["HT_RecentXGConceded"].append(ht_xg_conceded)
+        
+        at_xg, at_xg_conceded = calc_xg_stats(away_team, date, df, k)
+        recent_xg_stats["AT_RecentXG"].append(at_xg)
+        recent_xg_stats["AT_RecentXGConceded"].append(at_xg_conceded)
 
-            new_home_elo = team_elo[home_team] + k * (result_home - expected_home)
-            new_away_elo = team_elo[away_team] + k * ((1 - result_home) - expected_away)
+    for col, values in recent_xg_stats.items():
+        df[col] = values
 
-            team_elo[home_team] = new_home_elo
-            team_elo[away_team] = new_away_elo
+    return df
 
-        df.loc[season_data.index, "HT_Elo"] = home_elo_ratings
-        df.loc[season_data.index, "AT_Elo"] = away_elo_ratings
+
+## シーズンごとの累積平均ポイントを計算する関数
+def add_avg_xg_stats(df):
+    avg_xg_stats = {
+        "HT_AvgXG": [],
+        "HT_AvgXGConceded": [],
+        "AT_AvgXG": [],
+        "AT_AvgXGConceded": [],
+    }
+
+    for _, row in df.iterrows():
+        home_team, away_team, date = row["HomeTeam"], row["AwayTeam"], row["Date"]
+
+        ht_xg, ht_xg_conceded = calc_xg_stats(home_team, date, df, k=None)
+        avg_xg_stats["HT_AvgXG"].append(ht_xg)
+        avg_xg_stats["HT_AvgXGConceded"].append(ht_xg_conceded)
+        
+        at_xg, at_xg_conceded = calc_xg_stats(away_team, date, df, k=None)
+        avg_xg_stats["AT_AvgXG"].append(at_xg)
+        avg_xg_stats["AT_AvgXGConceded"].append(at_xg_conceded)
+
+    for col, values in avg_xg_stats.items():
+        df[col] = values
 
     return df
 
@@ -372,16 +373,24 @@ def add_elo_rating(df, initial_rating=1000, k=20, c=10, d=400):
 # -------------------------
 
 
-def add_team_stats(df, ratings_df, k):
+def add_team_stats(df, k):
     # ability
-    df = add_ratings(df, ratings_df)
+    logging.info("Adding ability stats...")
     df = add_avg_ppg_stats(df)
     df = add_avg_shots_stats(df)
     # home advantage
+    logging.info("Adding home advantage stats...")
     df = add_wdl_rates(df)
     # recent performance
+    logging.info("Adding recent stats...")
     df = add_recent_shots_stats(df, k)
     df = add_recent_ppg_stats(df, k)
     # ability of opposition
-    df = add_elo_rating(df)
+    logging.info("Adding elo ratings...")
+    df = add_elo_stats(df)
+    # bonus: xG
+    logging.info("Adding xG stats (test)...")
+    df = add_avg_xg_stats(df)
+    df = add_recent_xg_stats(df, k)
+
     return df

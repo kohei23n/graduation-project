@@ -2,13 +2,13 @@ import pandas as pd
 
 
 # データの読み込みと準備
-def load_and_prepare_data(match_data_path, ratings_data_path):
-    match_data_df = pd.read_csv(match_data_path)
-    ratings_df = pd.read_csv(ratings_data_path)
+def load_and_format_date(file_path):
+    match_data_df = pd.read_csv(file_path)
     match_data_df["Date"] = pd.to_datetime(
         match_data_df["Date"], format="%d/%m/%Y", dayfirst=True
     )
-    return match_data_df, ratings_df
+
+    return match_data_df
 
 
 # 訓練データとテストデータに分割
@@ -19,6 +19,7 @@ def split_data(match_data_df):
     test_data = match_data_df[
         match_data_df["Season"].isin(match_data_df["Season"].unique()[-2:])
     ].copy()
+
     return train_data, test_data
 
 
@@ -51,6 +52,10 @@ features = [
     "AT_AvgSOT",
     "AT_AvgShotsConceded",
     "AT_AvgSOTConceded",
+    "HT_AvgXG",
+    "AT_AvgXG",
+    "HT_AvgXGConceded",
+    "AT_AvgXGConceded",
     # Home Advantage
     "HT_HomeWinRate",
     "HT_HomeDrawRate",
@@ -59,6 +64,8 @@ features = [
     "AT_AwayDrawRate",
     "AT_AwayLossRate",
     # Recent Performance
+    "HT_RecentPPG",
+    "AT_RecentPPG",
     "HT_RecentShots",
     "HT_RecentSOT",
     "HT_RecentShotsConceded",
@@ -67,8 +74,10 @@ features = [
     "AT_RecentSOT",
     "AT_RecentShotsConceded",
     "AT_RecentSOTConceded",
-    "HT_RecentPPG",
-    "AT_RecentPPG",
+    "HT_RecentXG",
+    "AT_RecentXG",
+    "HT_RecentXGConceded",
+    "AT_RecentXGConceded",
     # Elo
     "HT_Elo",
     "AT_Elo",

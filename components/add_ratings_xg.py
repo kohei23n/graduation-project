@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from common_v2 import load_and_format_date
+from components.common import load_and_format_date
 
 # 進捗状況を表示するための設定
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
