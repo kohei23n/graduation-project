@@ -374,23 +374,17 @@ def add_avg_xg_stats(df):
 
 
 def add_team_stats(df, k):
-    # ability
     logging.info("Adding ability stats...")
     df = add_avg_ppg_stats(df)
     df = add_avg_shots_stats(df)
-    # home advantage
+    df = add_avg_xg_stats(df)
     logging.info("Adding home advantage stats...")
     df = add_wdl_rates(df)
-    # recent performance
     logging.info("Adding recent stats...")
     df = add_recent_shots_stats(df, k)
     df = add_recent_ppg_stats(df, k)
-    # ability of opposition
+    df = add_recent_xg_stats(df, k)
     logging.info("Adding elo ratings...")
     df = add_elo_stats(df)
-    # bonus: xG
-    logging.info("Adding xG stats (test)...")
-    df = add_avg_xg_stats(df)
-    df = add_recent_xg_stats(df, k)
 
     return df

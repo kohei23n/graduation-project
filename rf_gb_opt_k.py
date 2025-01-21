@@ -16,7 +16,7 @@ logging.info("Data loaded successfully.")
 logging.info("Splitting data into training and test datasets...")
 train_data, test_data = split_data(match_data_df)
 
-# # K の最適化（一回でOK）
+# K の最適化（一回でOK）
 # logging.info("Running optimization for K with Random Forest...")
 # best_k, best_log_loss, best_accuracy = optimise_k(train_data, features, model_type="rf")
 
@@ -26,6 +26,7 @@ train_data, test_data = split_data(match_data_df)
 
 # Best k: 5, Log Loss: 0.9993317628384265, Accuracy: 0.5253787878787879
 # Best k (after adding xG): 6, Log Loss: 1.0054352680960217, Accuracy: 0.527734375
+# Best k (after adding xG, again?): 6, Log Loss: 0.9899292290838554, Accuracy: 0.5328125
 
 # logging.info("Running optimization for K with Gradient Boosting...")
 # best_k, best_log_loss, best_accuracy = optimise_k(
@@ -38,6 +39,7 @@ train_data, test_data = split_data(match_data_df)
 
 # Best k: 7, Log Loss: 1.2439276466838884, Accuracy: 0.494758064516129
 # Best k (after adding xG): : 6, Log Loss: 1.2540531823914112, Accuracy: 0.507421875
+# Best k (after adding xG, again...?): 6, Log Loss: 1.2510478804785097, Accuracy: 0.51328125
 
 
 # # 最終的な特徴量生成

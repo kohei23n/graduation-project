@@ -69,16 +69,11 @@ def add_xg(df, xg_df):
     return df
 
 
-print("Original rows:", len(match_data_df))
 logging.info("Adding xG to match data...")
 match_data_df = add_xg(match_data_df, xg_df)
 logging.info("xG added successfully.")
-print("Rows after ratings:", len(match_data_df))
 
-# 不要なカラムを削除
-logging.info("Removing unnecessary columns...")
-unnecessary_columns = ["HomeXG", "AwayXG"]
-
+# 必要なカラムのみを抽出
 required_columns = [
     "Season",
     "Date",
